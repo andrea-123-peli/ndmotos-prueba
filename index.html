@@ -350,8 +350,11 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     com2.forEach(c=>{csv+=c.fecha.slice(0,10)+','+(c.proveedor||'')+','+(c.desc||'').replace(/,/g,' ')+','+c.total+','+c.pago+'\n';});
     csv+='\nNOMINA\nFecha,Empleado,Cargo,Periodo,Monto,Pago\n';
     emp2.forEach(e=>{csv+=e.fecha.slice(0,10)+','+(e.nombre||'')+','+(e.cargo||'')+','+(e.periodo||'')+','+e.monto+','+e.pago+'\n';});
+    csv+='\nINVENTARIO\nReferencia,Categoria,Nombre,P.Compra,P.Venta,Stock,Valor Compra,Valor Venta\n';
+    rInv.current.forEach(p=>{csv+=p.id+','+p.cat+','+p.nom+','+p.pc+','+p.pv+','+p.stock+','+(p.pc*p.stock)+','+(p.pv*p.stock)+'\n';});
     const tvT=ven2.reduce((a,b)=>a+b.total,0),tvG=ven2.reduce((a,b)=>a+b.ganancia,0),tGa=gas2.reduce((a,b)=>a+b.monto,0);
-    csv+='\nRESUMEN\nVentas Totales,'+tvT+'\nGanancia Bruta,'+tvG+'\nGastos Totales,'+tGa+'\nUtilidad Neta,'+(tvG-tGa)+'\n';
+    const vInvC=rInv.current.reduce((a,p)=>a+p.pc*p.stock,0), vInvV=rInv.current.reduce((a,p)=>a+p.pv*p.stock,0);
+    csv+='\nRESUMEN\nVentas Totales,'+tvT+'\nGanancia Bruta,'+tvG+'\nGastos Totales,'+tGa+'\nUtilidad Neta,'+(tvG-tGa)+'\nInventario (compra),'+vInvC+'\nInventario (venta),'+vInvV+'\n';
     const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
@@ -671,7 +674,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:10}}>
               <KPI lbl="📦 Inventario" val={inv.length} col={C.bl}
-                sub={agot>0?'⛔ '+agot+' agotado(s)':bajo>0?'⚠ '+bajo+' stock bajo':'✅ OK'}
+                sub={'Compra: '+fm(vinv)+' · Venta: '+fm(inv.reduce((a,p)=>a+p.pv*p.stock,0))}
                 onClick={()=>setTab('inventario')}/>
               <KPI lbl="📋 Fiados"  val={fm(fTot)}  col={C.pu} sub={fPend.length+' pendientes'} onClick={()=>{setTab('clientes');setClientesSub('fiados');}}/>
               <KPI lbl="🛒 Hoy"     val={fm(tHoy)}  col={C.or} sub={vHoy.length+' ventas'} onClick={()=>setTab('venta')}/>
@@ -732,7 +735,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                           <TD style={{fontSize:12}} ch={(x.r.desc||'').slice(0,35)}/>
                           <TD style={{color:x.t==='ven'?C.gr:C.re,fontWeight:700}} ch={fm(x.t==='ven'?x.r.total:x.r.monto)}/>
                           <TD style={{color:C.gr,fontWeight:700}} ch={x.r.ganancia>0?fm(x.r.ganancia):'-'}/>
-                          <TD ch={x.t==='ven'&&<Btn sm col={C.re} onClick={()=>borrarVenta(x.r.id)} ch="🗑"/>}/>
+                          <TD ch={x.t==='ven'&&<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;borrarVenta(x.r.id);}} ch="🗑"/>}/>
                         </tr>
                       ))}
                       {!ven.length&&!gas.length&&<tr><td colSpan={6} style={{textAlign:'center',padding:28,color:C.mu}}>Sin transacciones aun</td></tr>}
@@ -842,7 +845,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                               <TD style={{color:C.mu,fontSize:12}} ch={fT(v.fecha)}/>
                               <TD style={{fontSize:12}} ch={v.desc.slice(0,30)}/>
                               <TD style={{color:C.gr,fontWeight:700}} ch={fm(v.total)}/>
-                              <TD ch={<Btn sm col={C.re} onClick={()=>borrarVenta(v.id)} ch="🗑"/>}/>
+                              <TD ch={<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;borrarVenta(v.id);}} ch="🗑"/>}/>
                             </tr>
                           ))}
                           {!vHoy.length&&<tr><td colSpan={4} style={{textAlign:'center',padding:20,color:C.mu}}>Sin ventas hoy</td></tr>}
@@ -907,7 +910,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                                 <TD style={{fontSize:12}} ch={c2.desc}/>
                                 <TD ch={c2.cant}/>
                                 <TD style={{color:C.or,fontWeight:700}} ch={fm(c2.total)}/>
-                                <TD ch={<Btn sm col={C.re} onClick={()=>sCom(com.filter(x=>x.id!==c2.id))} ch="🗑"/>}/>
+                                <TD ch={<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sCom(com.filter(x=>x.id!==c2.id));}} ch="🗑"/>}/>
                               </tr>
                             ))}
                             {!com.length&&<tr><td colSpan={5} style={{textAlign:'center',padding:20,color:C.mu}}>Sin compras</td></tr>}
@@ -1028,7 +1031,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                                     <div style={{fontSize:11,color:C.mu}}>{cr.proveedor} · {fD(cr.fecha)}</div>
                                   </div>
                                  <Chip col={C.re} ch="PENDIENTE"/>
-                                  <Btn sm col={C.re} ch="🗑" onClick={()=>{sCreds(creds.filter(x=>x.id!==cr.id));toast2('Factura eliminada','info');}}/>
+                                  <Btn sm col={C.re} ch="🗑" onClick={()=>{if(!confirm('¿Seguro?'))return;sCreds(creds.filter(x=>x.id!==cr.id));toast2('Factura eliminada','info');}}/>
                                 </div>
                                 <div style={{background:C.su,borderRadius:20,height:8,marginBottom:8,overflow:'hidden'}}>
                                   <div style={{background:C.gr,height:'100%',width:pct+'%',borderRadius:20}}/>
@@ -1134,7 +1137,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                               <TD ch={<Chip col={C.re} ch={g2.tipo}/>}/>
                               <TD style={{fontSize:12}} ch={g2.desc}/>
                               <TD style={{color:C.re,fontWeight:700}} ch={fm(g2.monto)}/>
-                              <TD ch={<Btn sm col={C.re} onClick={()=>sGas(gas.filter(x=>x.id!==g2.id))} ch="🗑"/>}/>
+                              <TD ch={<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sGas(gas.filter(x=>x.id!==g2.id));}} ch="🗑"/>}/>
                             </tr>
                           ))}
                           {!gas.length&&<tr><td colSpan={5} style={{textAlign:'center',padding:20,color:C.mu}}>Sin gastos</td></tr>}
@@ -1161,7 +1164,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                               <TD style={{fontWeight:600}} ch={e2.nombre}/>
                               <TD ch={<Chip col={C.bl} ch={e2.cargo}/>}/>
                               <TD style={{fontSize:12,color:C.mu}} ch={e2.periodo}/>
-                             <TD style={{color:C.bl,fontWeight:700}} ch={fm(e2.monto)}/><TD ch={<Btn col={C.re} ch="🗑" onClick={()=>sEmp(emp.filter(x=>x.id!==e2.id))}/>}/>
+                             <TD style={{color:C.bl,fontWeight:700}} ch={fm(e2.monto)}/><TD ch={<Btn col={C.re} ch="🗑" onClick={()=>{if(!confirm('¿Seguro?'))return;sEmp(emp.filter(x=>x.id!==e2.id));}}/>}/>
                             </tr>
                           ))}
                           {!emp.length&&<tr><td colSpan={5} style={{textAlign:'center',padding:20,color:C.mu}}>Sin pagos</td></tr>}
@@ -1194,8 +1197,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
               <div>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,flexWrap:'wrap',gap:10}}>
                   <div style={{fontSize:15,fontWeight:800,letterSpacing:2,textTransform:'uppercase'}}>🗃 Inventario de Repuestos</div>
-                  <Btn sm col={bajo>0||agot>0?C.ye:'ghost'} onClick={()=>setShowStockModal(true)}
-                    ch={agot>0?'⛔ '+agot+' agotado(s)':bajo>0?'⚠ '+bajo+' stock bajo':'✅ Stock OK'}/>
+                  <Btn sm col={agot>0?C.re:'ghost'} onClick={()=>setShowStockModal(true)}
+                    ch={agot>0?'⛔ '+agot+' agotado(s)':'✅ Stock OK'}/>
                 </div>
                 <Card ch={
                   <div>
@@ -1224,7 +1227,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   <table style={{width:'100%',borderCollapse:'collapse'}}>
                     <thead><tr><TH ch="Ref."/><TH ch="Cat."/><TH ch="Producto"/><TH ch="P.Compra"/><TH ch="P.Venta"/><TH ch="Ganancia"/><TH ch="Stock"/><TH ch="Estado"/><TH ch=""/><TH ch=""/></tr></thead>
                     <tbody>
-                      {inv.filter(p=>!iBus||p.nom.toLowerCase().includes(iBus.toLowerCase())||p.id.toLowerCase().includes(iBus.toLowerCase())).map((p,i)=>{
+                      {inv.filter(p=>!iBus||p.nom.toLowerCase().includes(iBus.toLowerCase())||p.id.toLowerCase().includes(iBus.toLowerCase())||p.cat.toLowerCase().includes(iBus.toLowerCase())).map((p,i)=>{
                         const ag=p.stock<=0, bj=p.stock>0&&p.stock<=MIN;
                         const gan=p.pv-p.pc, mar2=p.pv>0?Math.round((gan/p.pv)*100):0;
                         return (
@@ -1238,7 +1241,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                             <TD style={{fontSize:20,fontWeight:800,color:ag?C.re:bj?C.ye:C.gr}} ch={p.stock}/>
                             <TD ch={<Chip col={ag?C.re:bj?C.ye:C.gr} ch={ag?'AGOTADO':bj?'BAJO':'OK'}/>}/>
                             <TD ch={<Btn sm col={C.bl} onClick={()=>setEP({...p,orig:p.id})} ch="✏️"/>}/>
-                            <TD ch={<Btn sm col={C.re} onClick={()=>{sInv(inv.filter(x=>x.id!==p.id));toast2('Producto eliminado','info');}} ch="🗑"/>}/>
+                            <TD ch={<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sInv(inv.filter(x=>x.id!==p.id));toast2('Producto eliminado','info');}} ch="🗑"/>}/>
                           </tr>
                         );
                       })}
@@ -1299,7 +1302,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                           <TD ch={
                             <div style={{display:'flex',gap:4}}>
                               <Btn sm col={C.mu} onClick={()=>sHerr(herr.map((x,j)=>j===i?{...x,activo:!x.activo}:x))} ch={h.activo===false?'↩ Activar':'Baja'}/>
-                              <Btn sm col={C.re} onClick={()=>{sHerr(herr.filter((_,j)=>j!==i));toast2('Eliminado','info');}} ch="🗑"/>
+                              <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sHerr(herr.filter((_,j)=>j!==i));toast2('Eliminado','info');}} ch="🗑"/>
                             </div>
                           }/>
                         </tr>
@@ -1407,7 +1410,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                               <div style={{marginTop:10,display:'flex',gap:8}}>
                                 <Btn sm col={C.bl} style={{flex:1,justifyContent:'center'}} onClick={()=>setVerCl(c)} ch="📋 Historial"/>
                                 <Btn sm col="ghost" onClick={()=>setECl({...c})} ch="✏️"/>
-                                <Btn sm col={C.re} onClick={()=>{sCli(cli.filter(x=>x.id!==c.id));toast2('Cliente eliminado','info');}} ch="🗑"/>
+                                <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sCli(cli.filter(x=>x.id!==c.id));toast2('Cliente eliminado','info');}} ch="🗑"/>
                               </div>
                             </div>
                           );
@@ -1456,7 +1459,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                                   <TD style={{fontSize:12}} ch={f2.desc||'-'}/>
                                   <TD style={{color:C.pu,fontWeight:700}} ch={fm(f2.valor)}/>
                                   <TD style={{fontSize:12,color:vencido?C.re:C.mu}} ch={(f2.vence?fD(f2.vence):'Sin fecha')+(vencido?' ⚠':'')}/>
-                                 <TD ch={<div style={{display:'flex',gap:4}}><Btn sm col={C.gr} onClick={()=>sFia(fia.map(x=>x.id===f2.id?{...x,pagado:true}:x))} ch="✓ Pago"/><Btn sm col={C.re} onClick={()=>sFia(fia.filter(x=>x.id!==f2.id))} ch="🗑"/></div>}/>                                 </tr>
+                                 <TD ch={<div style={{display:'flex',gap:4}}><Btn sm col={C.gr} onClick={()=>sFia(fia.map(x=>x.id===f2.id?{...x,pagado:true}:x))} ch="✓ Pago"/><Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sFia(fia.filter(x=>x.id!==f2.id));}} ch="🗑"/></div>}/>                                 </tr>
                               );
                             })}
                             {!fPend.length&&<tr><td colSpan={6} style={{textAlign:'center',padding:28,color:C.mu}}>✅ Sin fiados pendientes</td></tr>}
@@ -1568,8 +1571,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                           <TD style={{color:x.t==='ven'?C.gr:C.re,fontWeight:700}} ch={fm(x.t==='ven'?x.r.total:x.r.monto)}/>
                           <TD style={{color:C.gr,fontWeight:700}} ch={x.r.ganancia>0?fm(x.r.ganancia):'-'}/>
                           <TD ch={x.t==='ven'
-                            ? <Btn sm col={C.re} onClick={()=>borrarVenta(x.r.id)} ch="🗑"/>
-                            : <Btn sm col={C.re} onClick={()=>sGas(gas.filter(g=>g.id!==x.r.id))} ch="🗑"/>}/>
+                            ? <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;borrarVenta(x.r.id);}} ch="🗑"/>
+                            : <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sGas(gas.filter(g=>g.id!==x.r.id));}} ch="🗑"/>}/>
                         </tr>
                       ))}
                       {!allItems.length&&<tr><td colSpan={7} style={{textAlign:'center',padding:28,color:C.mu}}>Sin registros para este periodo</td></tr>}
@@ -1771,7 +1774,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                                 <TD style={{fontWeight:700}} ch={fm(p.valor)}/>
                                 <TD style={{color:C.gr,fontWeight:700}} ch={fm(p.emp60)+' ('+p.pct+'%)'}/>
                                 <TD style={{color:C.or,fontWeight:700}} ch={fm(p.neg40)+' ('+(100-p.pct)+'%)'}/>
-                                <TD ch={<Btn sm col={C.re} onClick={()=>{sEmpProd(empProd.filter(x=>x.id!==p.id));sVen(ven.filter(v=>v.id!==p.id+'e'));toast2('Eliminado','info');}} ch="🗑"/>}/>
+                                <TD ch={<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sEmpProd(empProd.filter(x=>x.id!==p.id));sVen(ven.filter(v=>v.id!==p.id+'e'));toast2('Eliminado','info');}} ch="🗑"/>}/>
                               </tr>
                             ))}
                             {!fil.length&&<tr><td colSpan={7} style={{textAlign:'center',padding:28,color:C.mu}}>Sin producciones para este filtro</td></tr>}
@@ -2187,6 +2190,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
         </div>
       }/>
 
+  
       {/* Toast */}
       {toast.msg&&(
         <div style={{position:'fixed',bottom:20,right:16,background:C.ca,
