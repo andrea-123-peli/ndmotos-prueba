@@ -342,19 +342,38 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     });
     const ven2=filtrar(rVen.current), gas2=filtrar(rGas.current);
     const com2=filtrar(rCom.current), emp2=filtrar(rEmp.current);
-    let csv='VENTAS\nFecha,Cliente,Descripcion,Total,Ganancia,Pago\n';
+    const sep = '\n'+'='.repeat(40)+'\n';
+    let csv = 'ND MOTOS - REPORTE DE CONTABILIDAD\n';
+    csv += 'Periodo: '+(de||'Inicio')+' al '+(ha||'Hoy')+'\n'+sep;
+    csv += '\nVENTAS\n';
+    csv += 'Fecha,Cliente,Descripcion,Total,Ganancia,Pago\n';
     ven2.forEach(v=>{csv+=v.fecha.slice(0,10)+','+(v.cliente||'')+','+(v.desc||'').replace(/,/g,' ')+','+v.total+','+v.ganancia+','+v.pago+'\n';});
-    csv+='\nGASTOS\nFecha,Tipo,Descripcion,Monto,Pago\n';
+    const tvT=ven2.reduce((a,b)=>a+b.total,0),tvG=ven2.reduce((a,b)=>a+b.ganancia,0);
+    csv+='TOTAL VENTAS,'+tvT+',,TOTAL GANANCIA,'+tvG+'\n';
+    csv += sep+'\nGASTOS\n';
+    csv += 'Fecha,Tipo,Descripcion,Monto,Pago\n';
     gas2.forEach(g=>{csv+=g.fecha.slice(0,10)+','+(g.tipo||'')+','+(g.desc||'').replace(/,/g,' ')+','+g.monto+','+g.pago+'\n';});
-    csv+='\nCOMPRAS\nFecha,Proveedor,Descripcion,Total,Pago\n';
+    const tGa=gas2.reduce((a,b)=>a+b.monto,0);
+    csv+='TOTAL GASTOS,'+tGa+'\n';
+    csv += sep+'\nCOMPRAS\n';
+    csv += 'Fecha,Proveedor,Descripcion,Total,Pago\n';
     com2.forEach(c=>{csv+=c.fecha.slice(0,10)+','+(c.proveedor||'')+','+(c.desc||'').replace(/,/g,' ')+','+c.total+','+c.pago+'\n';});
-    csv+='\nNOMINA\nFecha,Empleado,Cargo,Periodo,Monto,Pago\n';
+    csv += sep+'\nNOMINA\n';
+    csv += 'Fecha,Empleado,Cargo,Periodo,Monto,Pago\n';
     emp2.forEach(e=>{csv+=e.fecha.slice(0,10)+','+(e.nombre||'')+','+(e.cargo||'')+','+(e.periodo||'')+','+e.monto+','+e.pago+'\n';});
-    csv+='\nINVENTARIO\nReferencia,Categoria,Nombre,P.Compra,P.Venta,Stock,Valor Compra,Valor Venta\n';
+    csv += sep+'\nINVENTARIO\n';
+    csv += 'Referencia,Categoria,Nombre,P.Compra,P.Venta,Stock,Valor Compra,Valor Venta\n';
     rInv.current.forEach(p=>{csv+=p.id+','+p.cat+','+p.nom+','+p.pc+','+p.pv+','+p.stock+','+(p.pc*p.stock)+','+(p.pv*p.stock)+'\n';});
-    const tvT=ven2.reduce((a,b)=>a+b.total,0),tvG=ven2.reduce((a,b)=>a+b.ganancia,0),tGa=gas2.reduce((a,b)=>a+b.monto,0);
     const vInvC=rInv.current.reduce((a,p)=>a+p.pc*p.stock,0), vInvV=rInv.current.reduce((a,p)=>a+p.pv*p.stock,0);
-    csv+='\nRESUMEN\nVentas Totales,'+tvT+'\nGanancia Bruta,'+tvG+'\nGastos Totales,'+tGa+'\nUtilidad Neta,'+(tvG-tGa)+'\nInventario (compra),'+vInvC+'\nInventario (venta),'+vInvV+'\n';
+    csv += 'TOTAL BODEGA (COMPRA),'+vInvC+',,TOTAL BODEGA (VENTA),'+vInvV+'\n';
+    csv += sep+'\nRESUMEN GENERAL\n';
+    csv += 'Concepto,Valor\n';
+    csv += 'Ventas Totales,'+tvT+'\n';
+    csv += 'Ganancia Bruta,'+tvG+'\n';
+    csv += 'Gastos Totales,'+tGa+'\n';
+    csv += 'Utilidad Neta,'+(tvG-tGa)+'\n';
+    csv += 'Inventario (precio compra),'+vInvC+'\n';
+    csv += 'Inventario (precio venta),'+vInvV+'\n';
     const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
@@ -438,6 +457,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     if(!vItems.length) return toast2('Agrega al menos un producto','err');
     let total=0, ganancia=0;
     vItems.forEach(it=>{total+=it.pv*it.cant;ganancia+=(it.pv-it.pc)*it.cant;});
+    if(ivaActivo) total=Math.round(total*(1+IVA));
     const desc=vItems.map(it=>it.cant+'x '+it.nom).join(', ');
     const newInv=inv.map(p=>{const it=vItems.find(x=>x.id===p.id);return it&&!it.sv?{...p,stock:p.stock-it.cant}:p;});
     const venta={id:uid(),fecha:new Date().toISOString(),tipo:'venta',cliente:vCli2||'Cliente general',desc,total,ganancia,pago:vPago,items:[...vItems]};
@@ -590,6 +610,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   const [lvFecha,setLvFecha]=useState(''); const [lvFiltroEmp,setLvFiltroEmp]=useState('');
   const [lvFDe,setLvFDe]=useState(''); const [lvFHa,setLvFHa]=useState('');
   const [showStockModal,setShowStockModal]=useState(false);
+  const [ivaActivo,setIvaActivo]=useState(false);
+  const IVA=0.19;
 
   // ── CALCULOS ──
   const MIN    = parseInt(iMin)||5;
@@ -674,7 +696,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:10}}>
               <KPI lbl="📦 Inventario" val={inv.length} col={C.bl}
-                sub={'Compra: '+fm(vinv)+' · Venta: '+fm(inv.reduce((a,p)=>a+p.pv*p.stock,0))}
+                sub={'Bodega: '+fm(vinv)+' · Para venta: '+fm(inv.reduce((a,p)=>a+p.pv*p.stock,0))}
                 onClick={()=>setTab('inventario')}/>
               <KPI lbl="📋 Fiados"  val={fm(fTot)}  col={C.pu} sub={fPend.length+' pendientes'} onClick={()=>{setTab('clientes');setClientesSub('fiados');}}/>
               <KPI lbl="🛒 Hoy"     val={fm(tHoy)}  col={C.or} sub={vHoy.length+' ventas'} onClick={()=>setTab('venta')}/>
@@ -812,8 +834,19 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                     </table>
                   </div>
 
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                    <div style={{fontSize:11,color:C.mu}}>¿Incluir IVA (19%)?</div>
+                    <button onClick={()=>setIvaActivo(!ivaActivo)} style={{background:ivaActivo?C.or:'transparent',border:'1px solid '+C.or,borderRadius:20,color:ivaActivo?'#fff':C.or,padding:'4px 14px',fontSize:11,fontWeight:700,cursor:'pointer'}}>
+                      {ivaActivo?'IVA ON ✓':'IVA OFF'}
+                    </button>
+                  </div>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:12}}>
-                    <div><div style={{fontSize:10,color:C.mu,textTransform:'uppercase'}}>Total</div><div style={{fontSize:22,fontWeight:800,color:C.gr}}>{fm(vItems.reduce((a,b)=>a+b.pv*b.cant,0))}</div></div>
+                    <div>
+                      <div style={{fontSize:10,color:C.mu,textTransform:'uppercase'}}>Subtotal</div>
+                      <div style={{fontSize:18,fontWeight:800,color:C.gr}}>{fm(vItems.reduce((a,b)=>a+b.pv*b.cant,0))}</div>
+                      {ivaActivo&&<div style={{fontSize:11,color:C.ye}}>+IVA: {fm(Math.round(vItems.reduce((a,b)=>a+b.pv*b.cant,0)*IVA))}</div>}
+                      {ivaActivo&&<div style={{fontSize:16,fontWeight:800,color:C.gr}}>Total: {fm(Math.round(vItems.reduce((a,b)=>a+b.pv*b.cant,0)*(1+IVA)))}</div>}
+                    </div>
                     <div><div style={{fontSize:10,color:C.mu,textTransform:'uppercase'}}>Ganancia</div><div style={{fontSize:22,fontWeight:800,color:C.or}}>{fm(vItems.reduce((a,b)=>a+(b.pv-b.pc)*b.cant,0))}</div></div>
                   </div>
                   <div style={{display:'flex',gap:10}}>
@@ -2190,7 +2223,6 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
         </div>
       }/>
 
-  
       {/* Toast */}
       {toast.msg&&(
         <div style={{position:'fixed',bottom:20,right:16,background:C.ca,
