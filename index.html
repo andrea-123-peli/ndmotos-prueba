@@ -322,6 +322,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   const sCreds  = d => { rCreds.current=d;  setCreds(d);  guardar({creds:d});  };
 
   const [showBackup,setShowBackup] = useState(false);
+  const [perDe,setPerDe]=useState('');
+  const [perHa,setPerHa]=useState('');
   const [importTxt,setImportTxt]   = useState('');
 
   const exportarDatos = () => {
@@ -373,23 +375,14 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     csv2+='\nTOTALES,,,,,,'+vInvC+','+vInvV+'\n';
     csv2+='\nRESUMEN INVENTARIO\nTotal productos,'+rInv.current.length+'\nValor bodega (compra),'+vInvC+'\nValor bodega (venta),'+vInvV+'\n';
 
-    // Descargar hoja 1
-    const b1=new Blob(['\uFEFF'+csv1],{type:'text/csv;charset=utf-8'});
-    const u1=URL.createObjectURL(b1);
-    const a1=document.createElement('a');
-    a1.href=u1;a1.download='ndmotos_contabilidad_'+(de||'inicio')+'_al_'+(ha||'hoy')+'.csv';a1.click();
-    URL.revokeObjectURL(u1);
-
-    // Descargar hoja 2
-    setTimeout(()=>{
-      const b2=new Blob(['\uFEFF'+csv2],{type:'text/csv;charset=utf-8'});
-      const u2=URL.createObjectURL(b2);
-      const a2=document.createElement('a');
-      a2.href=u2;a2.download='ndmotos_inventario_'+(de||'inicio')+'_al_'+(ha||'hoy')+'.csv';a2.click();
-      URL.revokeObjectURL(u2);
-    },500);
-
-    toast2('2 archivos exportados. Abrelos en Excel','ok');
+    // Un solo archivo con todo
+    const csvFinal = csv1 + '\n\n\n' + csv2;
+    const bFinal=new Blob(['\uFEFF'+csvFinal],{type:'text/csv;charset=utf-8'});
+    const uFinal=URL.createObjectURL(bFinal);
+    const aFinal=document.createElement('a');
+    aFinal.href=uFinal;aFinal.download='ndmotos_reporte_'+(de||'inicio')+'_al_'+(ha||'hoy')+'.csv';aFinal.click();
+    URL.revokeObjectURL(uFinal);
+    toast2('Reporte exportado. Abrelo en Excel','ok');
   };
 
   const importarDatos = () => {
@@ -702,6 +695,44 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
               <KPI lbl="📈 Ganancia Bruta"  val={fm(tvG)} col={C.or} sub={'Margen: '+mar+'%'} onClick={()=>setTab('historial')}/>
               <KPI lbl="💸 Gastos"          val={fm(tGa)} col={C.re} sub="Incluye nomina" onClick={()=>setTab('gastos')}/>
               <KPI lbl="🏆 Utilidad Neta"   val={fm(util)} col={util>=0?C.ye:C.re} sub="Ganancia - Gastos"/>
+            </div>
+            {/* Utilidad por periodo */}
+            <Card style={{border:`1px solid ${C.ye}`}} ch={
+              <div>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:C.mu,marginBottom:12}}>📅 Utilidad por Período</div>
+                <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:12,alignItems:'flex-end'}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:10,color:C.mu,textTransform:'uppercase',marginBottom:4}}>Desde</div>
+                    <Inp v={perDe} s={setPerDe} type="date"/>
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:10,color:C.mu,textTransform:'uppercase',marginBottom:4}}>Hasta</div>
+                    <Inp v={perHa} s={setPerHa} type="date"/>
+                  </div>
+                  <Btn sm col="ghost" onClick={()=>{const d=new Date(),m=pad(d.getMonth()+1),y=d.getFullYear(),ul=new Date(y,d.getMonth()+1,0).getDate();setPerDe(y+'-'+m+'-01');setPerHa(y+'-'+m+'-'+pad(ul));}} ch="Este mes"/>
+                  <Btn sm col="ghost" onClick={()=>{setPerDe('');setPerHa('');}} ch="Todo"/>
+                </div>
+                {(()=>{
+                  const vP=ven.filter(v=>{const d=v.fecha.slice(0,10);return (!perDe||d>=perDe)&&(!perHa||d<=perHa);});
+                  const gP=gas.filter(g=>{const d=g.fecha.slice(0,10);return (!perDe||d>=perDe)&&(!perHa||d<=perHa);});
+                  const tvP=vP.reduce((a,b)=>a+b.total,0);
+                  const tgP=vP.reduce((a,b)=>a+b.ganancia,0);
+                  const gaP=gP.reduce((a,b)=>a+b.monto,0);
+                  const utP=tgP-gaP;
+                  return (
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10}}>
+                      {[{lbl:'Ventas',val:tvP,col:C.gr},{lbl:'Ganancia',val:tgP,col:C.or},{lbl:'Gastos',val:gaP,col:C.re},{lbl:'Utilidad',val:utP,col:utP>=0?C.ye:C.re}].map((it,i)=>(
+                        <div key={i} style={{background:C.su,borderRadius:8,padding:12,textAlign:'center'}}>
+                          <div style={{fontSize:10,color:C.mu,textTransform:'uppercase',marginBottom:4}}>{it.lbl}</div>
+                          <div style={{fontSize:16,fontWeight:800,color:it.col}}>{fm(it.val)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            }/>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:10}}>
               <KPI lbl="📦 Inventario" val={inv.length} col={C.bl}
@@ -1253,12 +1284,12 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                     <span style={{fontSize:11,color:C.mu}}>IVA %:</span>
                     <Inp v={ivaPct} s={v=>setIvaPct(parseFloat(v)||0)} type="number" style={{width:60,textAlign:'center'}}/>
                     <div style={{display:'flex',gap:4}}>
-                      <Btn sm col="ghost" onClick={()=>invTableRef.current&&invTableRef.current.scrollTo({top:0,behavior:'smooth'})} ch="⬆ Inicio"/>
-                      <Btn sm col="ghost" onClick={()=>invTableRef.current&&invTableRef.current.scrollTo({top:99999,behavior:'smooth'})} ch="⬇ Final"/>
+                      <Btn sm col="ghost" onClick={()=>{const el=document.getElementById("invTable");if(el)el.scrollTo({top:0,behavior:"smooth"});}} ch="⬆ Inicio"/>
+                      <Btn sm col="ghost" onClick={()=>{const el=document.getElementById("invTable");if(el)el.scrollTo({top:99999,behavior:"smooth"});}} ch="⬇ Final"/>
                     </div>
                   </div>
                 </div>
-                <div ref={invTableRef} style={{overflowX:'auto',overflowY:'auto',maxHeight:500,borderRadius:10,border:`1px solid ${C.bo}`}}>
+                <div id="invTable" style={{overflowX:'auto',overflowY:'auto',maxHeight:500,borderRadius:10,border:`1px solid ${C.bo}`}}>
                   <table style={{width:'100%',borderCollapse:'collapse'}}>
                     <thead><tr><TH ch="Ref."/><TH ch="Cat."/><TH ch="Producto"/><TH ch="P.Compra"/><TH ch="P.Venta"/><TH ch="+ IVA"/><TH ch="Ganancia"/><TH ch="Stock"/><TH ch="Estado"/><TH ch=""/><TH ch=""/></tr></thead>
                     <tbody>
