@@ -456,11 +456,19 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     // Si hay tecnico asignado, registrar en produccion del taller
     if(vTecnico){
       const empObj=emps.find(e=>e.nom===vTecnico);
-      const pct=empObj?empObj.pct:60;
-      const prod={id:item.id+'t',fecha:hoy(),empleado:vTecnico,
-        servicio:vSD||vST,desc:(vSD||vST),pct,valor:pv,
-        emp60:Math.round(pv*(pct/100)),neg40:Math.round(pv*((100-pct)/100))};
-      sEmpProd([...rEmpProd.current,prod]);
+      const lavObj=lavEmps.find(e=>e.nom===vTecnico);
+      if(empObj){
+        const pct=empObj.pct;
+        const prod={id:item.id+'t',fecha:hoy(),empleado:vTecnico,
+          servicio:vSD||vST,desc:(vSD||vST),pct,valor:pv,
+          emp60:Math.round(pv*(pct/100)),neg40:Math.round(pv*((100-pct)/100))};
+        sEmpProd([...rEmpProd.current,prod]);
+      } else if(lavObj){
+        const pct=lavObj.pct;
+        const prod={id:item.id+'l',fecha:hoy(),empleado:vTecnico,servicio:(vSD||vST),
+          valor:pv,empParte:Math.round(pv*(pct/100)),negParte:Math.round(pv*((100-pct)/100)),pct};
+        sLavProd([...rLavProd.current,prod]);
+      }
     }
     setVSD('');setVSC('0');setVSP('');setVTecnico('');
     toast2('Servicio agregado'+(vTecnico?' — registrado en taller de '+vTecnico:''),'ok');
@@ -876,7 +884,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                         <select value={vTecnico} onChange={e=>setVTecnico(e.target.value)}
                           style={{width:'100%',background:C.su,border:`1px solid ${C.bo}`,borderRadius:8,color:C.tx,fontSize:14,padding:'10px 12px',outline:'none'}}>
                           <option value="">-- Sin asignar --</option>
-                          {emps.map(e2=><option key={e2.nom} value={e2.nom}>{e2.nom} ({e2.pct}%)</option>)}
+                          {emps.map(e2=><option key={'t'+e2.nom} value={e2.nom}>🔧 {e2.nom} ({e2.pct}%)</option>)}
+                          {lavEmps.map(e2=><option key={'l'+e2.nom} value={e2.nom}>🚿 {e2.nom} ({e2.pct}%)</option>)}
                         </select>
                       }/>
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
@@ -943,13 +952,14 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                     <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:C.mu,marginBottom:10}}>🕒 Ventas Recientes</div>
                     <div style={{overflowX:'auto'}}>
                       <table style={{width:'100%',borderCollapse:'collapse'}}>
-                        <thead><tr><TH ch="Hora"/><TH ch="Descripcion"/><TH ch="Total"/><TH ch=""/></tr></thead>
+                        <thead><tr><TH ch="Hora"/><TH ch="Descripcion"/><TH ch="Total"/><TH ch=""/><TH ch=""/></tr></thead>
                         <tbody>
                           {vHoy.slice(-8).reverse().map((v,i)=>(
                             <tr key={i} style={{borderBottom:`1px solid ${C.bo}`}}>
                               <TD style={{color:C.mu,fontSize:12}} ch={fT(v.fecha)}/>
                               <TD style={{fontSize:12}} ch={v.desc.slice(0,30)}/>
                               <TD style={{color:C.gr,fontWeight:700}} ch={fm(v.total)}/>
+                              <TD ch={v.items&&v.items.length>0?<Btn sm col={C.pu} onClick={()=>setTk(v)} ch="📄"/>:null}/>
                               <TD ch={<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;borrarVenta(v.id);}} ch="🗑"/>}/>
                             </tr>
                           ))}
@@ -2333,7 +2343,6 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
           <div style={{borderTop:'1px solid #e5e5e5',paddingTop:10,textAlign:'center',fontSize:10,color:'#999'}}>
             <div style={{fontFamily:'monospace',fontSize:9,marginBottom:6,wordBreak:'break-all'}}>CUFE: {numFact}-{ticket.id}</div>
             <div>Gracias por su compra</div>
-            <div>Este documento es un comprobante de venta y no constituye factura electronica DIAN</div>
           </div>
 
           {/* Botones (no se imprimen) */}
