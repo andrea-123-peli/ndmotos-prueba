@@ -1330,8 +1330,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                       {ivaOn?'IVA ON ✓':'IVA OFF'}
                     </button>
                     <div style={{display:'flex',gap:4}}>
-                      <Btn sm col="ghost" onClick={()=>{const el=document.getElementById("invTable");if(el)el.scrollTo({top:0,behavior:"smooth"});}} ch="⬆ Inicio"/>
-                      <Btn sm col="ghost" onClick={()=>{const el=document.getElementById("invTable");if(el)el.scrollTo({top:99999,behavior:"smooth"});}} ch="⬇ Final"/>
+                      <Btn sm col="ghost" onClick={()=>{const el=document.getElementById("invTable");if(el)el.scrollTop=0;}} ch="⬆ Inicio"/>
+                      <Btn sm col="ghost" onClick={()=>{const el=document.getElementById("invTable");if(el)el.scrollTop=el.scrollHeight;}} ch="⬇ Final"/>
                     </div>
                   </div>
                 </div>
