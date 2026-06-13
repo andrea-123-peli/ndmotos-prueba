@@ -431,6 +431,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   const [vItems,setVI]=useState([]); const [vBus,setVB]=useState('');
   const [vSel,setVS]=useState(null); const [vCant,setVC]=useState('1');
   const [vPrecio,setVPr]=useState(''); const [vCli2,setVCl]=useState(''); const [vClObj,setVClObj]=useState(null);
+  const [ivaActivo,setIvaActivo]=useState(false); const IVA2=0.19;
   const [vPago,setVPg]=useState('Efectivo'); const [vTipo,setVT]=useState('prod');
   const [vST,setVST]=useState('Cambio de aceite'); const [vSD,setVSD]=useState('');
   const [vSC,setVSC]=useState('0'); const [vSP,setVSP]=useState('');
@@ -472,6 +473,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     const desc=vItems.map(it=>it.cant+'x '+it.nom).join(', ');
     const newInv=inv.map(p=>{const it=vItems.find(x=>x.id===p.id);return it&&!it.sv?{...p,stock:p.stock-it.cant}:p;});
     const subtotalCalc=vItems.reduce((a,b)=>a+b.pv*b.cant,0);
+    if(ivaActivo) total=Math.round(subtotalCalc*(1+IVA2));
     const ivaMonto=ivaActivo?(total-subtotalCalc):0;
     const venta={id:uid(),fecha:new Date().toISOString(),tipo:'venta',cliente:vCli2||'Cliente general',clienteEmail:vClObj?vClObj.email:'',clienteNit:vClObj?vClObj.nit:'',clienteEmpresa:vClObj?vClObj.empresa:false,desc,total,ganancia,pago:vPago,items:[...vItems],iva:ivaMonto};
     sInv(newInv);
@@ -904,8 +906,19 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                     </table>
                   </div>
 
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                    <div style={{fontSize:11,color:C.mu}}>¿Incluir IVA (19%)?</div>
+                    <button onClick={()=>setIvaActivo(!ivaActivo)} style={{background:ivaActivo?C.or:'transparent',border:'1px solid '+C.or,borderRadius:20,color:ivaActivo?'#fff':C.or,padding:'4px 14px',fontSize:11,fontWeight:700,cursor:'pointer'}}>
+                      {ivaActivo?'IVA ON ✓':'IVA OFF'}
+                    </button>
+                  </div>
                   <div style={{display:'flex',justifyContent:'space-between',marginBottom:12}}>
-                    <div><div style={{fontSize:10,color:C.mu,textTransform:'uppercase'}}>Total</div><div style={{fontSize:22,fontWeight:800,color:C.gr}}>{fm(vItems.reduce((a,b)=>a+b.pv*b.cant,0))}</div></div>
+                    <div>
+                      <div style={{fontSize:10,color:C.mu,textTransform:'uppercase'}}>Subtotal</div>
+                      <div style={{fontSize:18,fontWeight:800,color:C.gr}}>{fm(vItems.reduce((a,b)=>a+b.pv*b.cant,0))}</div>
+                      {ivaActivo&&<div style={{fontSize:11,color:C.ye}}>+IVA: {fm(Math.round(vItems.reduce((a,b)=>a+b.pv*b.cant,0)*IVA2))}</div>}
+                      {ivaActivo&&<div style={{fontSize:16,fontWeight:800,color:C.gr}}>Total: {fm(Math.round(vItems.reduce((a,b)=>a+b.pv*b.cant,0)*(1+IVA2)))}</div>}
+                    </div>
                     <div><div style={{fontSize:10,color:C.mu,textTransform:'uppercase'}}>Ganancia</div><div style={{fontSize:22,fontWeight:800,color:C.or}}>{fm(vItems.reduce((a,b)=>a+(b.pv-b.pc)*b.cant,0))}</div></div>
                   </div>
                   <div style={{display:'flex',gap:10}}>
