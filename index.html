@@ -977,7 +977,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                     <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:C.mu,marginBottom:10}}>🕒 Ventas Recientes</div>
                     <div style={{overflowX:'auto'}}>
                       <table style={{width:'100%',borderCollapse:'collapse'}}>
-                        <thead><tr><TH ch="Hora"/><TH ch="Descripcion"/><TH ch="Total"/><TH ch=""/><TH ch=""/></tr></thead>
+                        <thead><tr><TH ch="Hora"/><TH ch="Descripcion"/><TH ch="Total"/><TH ch=""/><TH ch=""/><TH ch=""/></tr></thead>
                         <tbody>
                           {vHoy.slice(-8).reverse().map((v,i)=>(
                             <tr key={i} style={{borderBottom:`1px solid ${C.bo}`}}>
@@ -985,6 +985,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                               <TD style={{fontSize:12}} ch={v.desc.slice(0,30)}/>
                               <TD style={{color:C.gr,fontWeight:700}} ch={fm(v.total)}/>
                               <TD ch={v.items&&v.items.length>0?<Btn sm col={C.pu} onClick={()=>setTk(v)} ch="📄"/>:null}/>
+                              <TD ch={v.tipo==='venta'&&v.items&&v.items.length>0?<Btn sm col={C.bl} onClick={()=>cargarVentaParaEditar(v)} ch="✏️"/>:null}/>
                               <TD ch={<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;borrarVenta(v.id);}} ch="🗑"/>}/>
                             </tr>
                           ))}
