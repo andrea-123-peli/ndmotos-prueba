@@ -619,6 +619,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   const [lvFDe,setLvFDe]=useState(''); const [lvFHa,setLvFHa]=useState('');
   const [showStockModal,setShowStockModal]=useState(false);
   const [ivaPct,setIvaPct]=useState(19);
+  const [ivaOn,setIvaOn]=useState(false);
   const invTableRef=useRef(null);
 
   // ── CALCULOS ──
@@ -1289,6 +1290,9 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   <div style={{display:'flex',alignItems:'center',gap:8}}>
                     <span style={{fontSize:11,color:C.mu}}>IVA %:</span>
                     <Inp v={ivaPct} s={v=>setIvaPct(parseFloat(v)||0)} type="number" style={{width:60,textAlign:'center'}}/>
+                    <button onClick={()=>setIvaOn(!ivaOn)} style={{background:ivaOn?C.or:'transparent',border:'1px solid '+C.or,borderRadius:20,color:ivaOn?'#fff':C.or,padding:'6px 14px',fontSize:11,fontWeight:700,cursor:'pointer'}}>
+                      {ivaOn?'IVA ON ✓':'IVA OFF'}
+                    </button>
                     <div style={{display:'flex',gap:4}}>
                       <Btn sm col="ghost" onClick={()=>{const el=document.getElementById("invTable");if(el)el.scrollTo({top:0,behavior:"smooth"});}} ch="⬆ Inicio"/>
                       <Btn sm col="ghost" onClick={()=>{const el=document.getElementById("invTable");if(el)el.scrollTo({top:99999,behavior:"smooth"});}} ch="⬇ Final"/>
@@ -1297,7 +1301,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                 </div>
                 <div id="invTable" style={{overflowX:'auto',overflowY:'auto',maxHeight:500,borderRadius:10,border:`1px solid ${C.bo}`}}>
                   <table style={{width:'100%',borderCollapse:'collapse'}}>
-                    <thead><tr><TH ch="Ref."/><TH ch="Cat."/><TH ch="Producto"/><TH ch="P.Compra"/><TH ch="P.Venta"/><TH ch="+ IVA"/><TH ch="Ganancia"/><TH ch="Stock"/><TH ch="Estado"/><TH ch=""/><TH ch=""/></tr></thead>
+                    <thead><tr><TH ch="Ref."/><TH ch="Cat."/><TH ch="Producto"/><TH ch="P.Compra"/><TH ch="P.Venta"/>{ivaOn&&<TH ch="+ IVA"/>}<TH ch="Ganancia"/><TH ch="Stock"/><TH ch="Estado"/><TH ch=""/><TH ch=""/></tr></thead>
                     <tbody>
                       {inv.filter(p=>!iBus||p.nom.toLowerCase().includes(iBus.toLowerCase())||p.id.toLowerCase().includes(iBus.toLowerCase())||p.cat.toLowerCase().includes(iBus.toLowerCase())).map((p,i)=>{
                         const ag=p.stock<=0, bj=p.stock>0&&p.stock<=MIN;
@@ -1309,7 +1313,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                             <TD style={{fontWeight:600}} ch={p.nom}/>
                             <TD style={{color:'#aaa',fontWeight:600}} ch={fm(p.pc)}/>
                             <TD style={{fontWeight:700}} ch={fm(p.pv)}/>
-                            <TD style={{color:C.ye,fontSize:11}} ch={ivaPct>0?fm(Math.round(p.pv*(1+ivaPct/100))):'-'}/>
+                            {ivaOn&&<TD style={{color:C.ye,fontSize:11}} ch={fm(Math.round(p.pv*(1+ivaPct/100)))}/>}
                             <TD style={{color:C.gr,fontWeight:700}} ch={fm(gan)+' ('+mar2+'%)'}/>
                             <TD style={{fontSize:20,fontWeight:800,color:ag?C.re:bj?C.ye:C.gr}} ch={p.stock}/>
                             <TD ch={<Chip col={ag?C.re:bj?C.ye:C.gr} ch={ag?'AGOTADO':bj?'BAJO':'OK'}/>}/>
