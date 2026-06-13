@@ -436,6 +436,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   const [vST,setVST]=useState('Cambio de aceite'); const [vSD,setVSD]=useState('');
   const [vSC,setVSC]=useState('0'); const [vSP,setVSP]=useState('');
   const [ticket,setTk]=useState(null);
+  const [editVenta,setEditVenta]=useState(null);
   const [vTecnico,setVTecnico]=useState('');
 
   const addItem = () => {
@@ -474,6 +475,30 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     toast2('Servicio agregado'+(vTecnico?' — registrado en taller de '+vTecnico:''),'ok');
   };
 
+  const cargarVentaParaEditar = v => {
+    // Restaurar stock de la venta vieja
+    const newInv=v.items?inv.map(p=>{const it=v.items.find(x=>x.id===p.id);return it&&!it.sv?{...p,stock:p.stock+it.cant}:p;}):inv;
+    sInv(newInv);
+    // Quitar la venta vieja
+    sVen(rVen.current.filter(x=>x.id!==v.id));
+    // Quitar produccion asociada en taller/lavadero si tenia
+    if(v.items){
+      v.items.forEach(it=>{
+        if(it.sv){
+          sEmpProd(rEmpProd.current.filter(p=>p.id!==it.id+'t'));
+          sLavProd(rLavProd.current.filter(p=>p.id!==it.id+'l'));
+        }
+      });
+    }
+    // Cargar los items en el formulario
+    setVI(v.items?[...v.items]:[]);
+    setVCl(v.cliente==='Cliente general'?'':v.cliente);
+    setVPg(v.pago);
+    setEditVenta(v.id);
+    setTab('venta');
+    toast2('Venta cargada para editar. Ajusta y vuelve a registrar','info');
+  };
+
   const regVenta = () => {
     if(!vItems.length) return toast2('Agrega al menos un producto','err');
     let total=0, ganancia=0;
@@ -488,7 +513,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     sVen([...rVen.current,venta]);
     if(vPago==='Fiado') sFia([...rFia.current,{id:uid(),nombre:vCli2||'Cliente',tel:'',desc,valor:total,fecha:new Date().toISOString(),vence:'',pagado:false}]);
     setTk(venta);
-    setVI([]);setVB('');setVS(null);setVC('1');setVPr('');setVCl('');setVClObj(null);setVTecnico('');
+    setVI([]);setVB('');setVS(null);setVC('1');setVPr('');setVCl('');setVClObj(null);setVTecnico('');setEditVenta(null);
     toast2('Venta de '+fm(total)+' registrada','ok');
   };
 
@@ -931,7 +956,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                     <div><div style={{fontSize:10,color:C.mu,textTransform:'uppercase'}}>Ganancia</div><div style={{fontSize:22,fontWeight:800,color:C.or}}>{fm(vItems.reduce((a,b)=>a+(b.pv-b.pc)*b.cant,0))}</div></div>
                   </div>
                   <div style={{display:'flex',gap:10}}>
-                    <Btn onClick={regVenta} col={C.gr} style={{flex:1,justifyContent:'center'}} ch="✅ Registrar Venta"/>
+                    <Btn onClick={regVenta} col={C.gr} style={{flex:1,justifyContent:'center'}} ch={editVenta?"✏️ Guardar Cambios":"✅ Registrar Venta"}/>
                     <Btn onClick={()=>{setVI([]);setVB('');setVS(null);}} col="ghost" ch="🗑 Limpiar"/>
                   </div>
                 </div>
