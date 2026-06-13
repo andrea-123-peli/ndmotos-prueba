@@ -256,13 +256,14 @@ function App() {
   const [lavProd,setLavProd] = useState([]);
   const [lavPct,setLavPct]   = useState(50);
   const [creds,setCreds]     = useState([]);
+  const [negNit,setNegNit]    = useState('');
 
   // ── REFS (para guardar sin race conditions) ──
   const rInv=useRef(BASE_INV); const rVen=useRef([]);    const rGas=useRef([]);
   const rCom=useRef([]);       const rFia=useRef([]);    const rEmp=useRef([]);
   const rCli=useRef([]);       const rMeta=useRef(0);   const rHerr=useRef([]);
   const rEmps=useRef([]);      const rEmpProd=useRef([]); const rLavEmps=useRef([]);
-  const rLavProd=useRef([]);   const rLavPct=useRef(50); const rCreds=useRef([]);
+  const rLavProd=useRef([]);   const rLavPct=useRef(50); const rCreds=useRef([]); const rNegNit=useRef('');
 
   // ── STORAGE ──
   useEffect(()=>{
@@ -297,13 +298,14 @@ function App() {
           set('lavProd',rLavProd,setLavProd);
           if(d.lavPct!=null){rLavPct.current=d.lavPct;setLavPct(d.lavPct);}
           set('creds',rCreds,setCreds);
+          if(d.negNit!=null){rNegNit.current=d.negNit;setNegNit(d.negNit);}
         }
       }catch(e){}
       if(!done){done=true;clearTimeout(to);setReady(true);}
     })();
     return ()=>clearTimeout(to);
   },[]);
-const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current,gas:rGas.current,com:rCom.current,fia:rFia.current,emp:rEmp.current,cli:rCli.current,meta:rMeta.current,herr:rHerr.current,emps:rEmps.current,empProd:rEmpProd.current,lavEmps:rLavEmps.current,lavProd:rLavProd.current,lavPct:rLavPct.current,creds:rCreds.current,...(patch||{})}; const json=JSON.stringify(data); try{localStorage.setItem('ndm_all_local',json);}catch(e){} try{await fetch('https://hdbnuzyzoiwihxrohhbn.supabase.co/rest/v1/ndmotos_data?id=eq.sede3',{method:'PATCH',headers:{'Content-Type':'application/json','apikey':'sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Authorization':'Bearer sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Prefer':'return=minimal'},body:JSON.stringify({data,updated_at:new Date().toISOString()})});}catch(e){} };
+const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current,gas:rGas.current,com:rCom.current,fia:rFia.current,emp:rEmp.current,cli:rCli.current,meta:rMeta.current,herr:rHerr.current,emps:rEmps.current,empProd:rEmpProd.current,lavEmps:rLavEmps.current,lavProd:rLavProd.current,lavPct:rLavPct.current,creds:rCreds.current,negNit:rNegNit.current,...(patch||{})}; const json=JSON.stringify(data); try{localStorage.setItem('ndm_all_local',json);}catch(e){} try{await fetch('https://hdbnuzyzoiwihxrohhbn.supabase.co/rest/v1/ndmotos_data?id=eq.sede3',{method:'PATCH',headers:{'Content-Type':'application/json','apikey':'sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Authorization':'Bearer sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Prefer':'return=minimal'},body:JSON.stringify({data,updated_at:new Date().toISOString()})});}catch(e){} };
   
   const sInv    = d => { rInv.current=d;    setInv(d);    guardar({inv:d});    };
   const sVen    = d => { rVen.current=d;    setVen(d);    guardar({ven:d});    };
@@ -320,6 +322,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   const sLavProd= d => { rLavProd.current=d;setLavProd(d);guardar({lavProd:d});};
   const sLavPct = v => { rLavPct.current=v; setLavPct(v); guardar({lavPct:v}); };
   const sCreds  = d => { rCreds.current=d;  setCreds(d);  guardar({creds:d});  };
+  const sNegNit = v => { rNegNit.current=v; setNegNit(v); guardar({negNit:v}); };
 
   const [showBackup,setShowBackup] = useState(false);
   const [perDe,setPerDe]=useState('');
@@ -427,7 +430,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   // ── FORMULARIO VENTA ──
   const [vItems,setVI]=useState([]); const [vBus,setVB]=useState('');
   const [vSel,setVS]=useState(null); const [vCant,setVC]=useState('1');
-  const [vPrecio,setVPr]=useState(''); const [vCli2,setVCl]=useState('');
+  const [vPrecio,setVPr]=useState(''); const [vCli2,setVCl]=useState(''); const [vClObj,setVClObj]=useState(null);
   const [vPago,setVPg]=useState('Efectivo'); const [vTipo,setVT]=useState('prod');
   const [vST,setVST]=useState('Cambio de aceite'); const [vSD,setVSD]=useState('');
   const [vSC,setVSC]=useState('0'); const [vSP,setVSP]=useState('');
@@ -468,12 +471,14 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     vItems.forEach(it=>{total+=it.pv*it.cant;ganancia+=(it.pv-it.pc)*it.cant;});
     const desc=vItems.map(it=>it.cant+'x '+it.nom).join(', ');
     const newInv=inv.map(p=>{const it=vItems.find(x=>x.id===p.id);return it&&!it.sv?{...p,stock:p.stock-it.cant}:p;});
-    const venta={id:uid(),fecha:new Date().toISOString(),tipo:'venta',cliente:vCli2||'Cliente general',desc,total,ganancia,pago:vPago,items:[...vItems]};
+    const subtotalCalc=vItems.reduce((a,b)=>a+b.pv*b.cant,0);
+    const ivaMonto=ivaActivo?(total-subtotalCalc):0;
+    const venta={id:uid(),fecha:new Date().toISOString(),tipo:'venta',cliente:vCli2||'Cliente general',clienteEmail:vClObj?vClObj.email:'',clienteNit:vClObj?vClObj.nit:'',clienteEmpresa:vClObj?vClObj.empresa:false,desc,total,ganancia,pago:vPago,items:[...vItems],iva:ivaMonto};
     sInv(newInv);
     sVen([...rVen.current,venta]);
     if(vPago==='Fiado') sFia([...rFia.current,{id:uid(),nombre:vCli2||'Cliente',tel:'',desc,valor:total,fecha:new Date().toISOString(),vence:'',pagado:false}]);
     setTk(venta);
-    setVI([]);setVB('');setVS(null);setVC('1');setVPr('');setVCl('');setVTecnico('');
+    setVI([]);setVB('');setVS(null);setVC('1');setVPr('');setVCl('');setVClObj(null);setVTecnico('');
     toast2('Venta de '+fm(total)+' registrada','ok');
   };
 
@@ -563,6 +568,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
 
   // ── FORMULARIO CLIENTES ──
   const [clNom,setClN]=useState(''); const [clTel,setClT]=useState('');
+  const [clEmpresa,setClEmpresa]=useState(false); const [clNit,setClNit]=useState(''); const [clEmail,setClEmail]=useState('');
   const [clMoto,setClM]=useState(''); const [clPlaca,setClPl]=useState('');
   const [clNotas,setClNo]=useState(''); const [clBus,setClB]=useState('');
   const [clSel,setClS]=useState(null); const [clFe,setClFe]=useState(hoy());
@@ -574,8 +580,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
 
   const addCl = () => {
     if(!clNom) return toast2('Escribe el nombre','err');
-    sCli([...cli,{id:uid(),nom:clNom,tel:clTel,moto:clMoto,placa:clPlaca,notas:clNotas,servicios:[]}]);
-    setClN('');setClT('');setClM('');setClPl('');setClNo('');toast2('Cliente registrado','ok');
+    sCli([...cli,{id:uid(),nom:clNom,tel:clTel,email:clEmail,moto:clMoto,placa:clPlaca,notas:clNotas,empresa:clEmpresa,nit:clNit,servicios:[]}]);
+    setClN('');setClT('');setClM('');setClPl('');setClNo('');setClEmail('');setClNit('');setClEmpresa(false);toast2('Cliente registrado','ok');
   };
 
   const addServCl = () => {
@@ -825,7 +831,24 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
               <Card ch={
                 <div>
-                  <FG lbl="Cliente (opcional)" ch={<Inp v={vCli2} s={setVCl} ph="Nombre del cliente..."/>}/>
+                  <FG lbl="Cliente (opcional)" ch={
+                    <div style={{position:'relative'}}>
+                      <Inp v={vCli2} s={v=>{setVCl(v);setVClObj(null);}} ph="Nombre del cliente..."/>
+                      {vCli2&&!vClObj&&cli.filter(c=>c.nom.toLowerCase().includes(vCli2.toLowerCase())).slice(0,4).length>0&&(
+                        <div style={{position:'absolute',top:'100%',left:0,right:0,background:C.ca,border:`1px solid ${C.or}`,borderRadius:'0 0 8px 8px',zIndex:50}}>
+                          {cli.filter(c=>c.nom.toLowerCase().includes(vCli2.toLowerCase())).slice(0,4).map(c=>(
+                            <div key={c.id} onClick={()=>{setVCl(c.nom);setVClObj(c);}}
+                              style={{padding:'8px 12px',cursor:'pointer',fontSize:13,borderBottom:`1px solid ${C.bo}`}}
+                              onMouseEnter={e=>e.currentTarget.style.background=C.su}
+                              onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                              <b>{c.nom}</b>{c.empresa&&<span style={{fontSize:10,color:C.or,marginLeft:6}}>NIT: {c.nit}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {vClObj&&<div style={{fontSize:11,color:C.gr,marginTop:4}}>✓ {vClObj.empresa?'Empresa NIT '+vClObj.nit:'Cliente registrado'}{vClObj.email?' · '+vClObj.email:''}</div>}
+                    </div>
+                  }/>
                   <FG lbl="Forma de Pago" ch={<Sel v={vPago} s={setVPg} opts={PAGOS}/>}/>
                   <div style={{display:'flex',gap:8,marginBottom:12}}>
                     <Btn onClick={()=>setVT('prod')} col={vTipo==='prod'?C.bl:'ghost'} style={{flex:1,justifyContent:'center'}} ch="🔩 Producto"/>
@@ -1412,10 +1435,18 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                       <div>
                         <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:C.mu,marginBottom:12}}>➕ Nuevo Cliente</div>
                         {[['Nombre',clNom,setClN,'Nombre completo...'],['Telefono',clTel,setClT,'Numero...'],
+                          ['Email',clEmail,setClEmail,'correo@ejemplo.com'],
                           ['Moto',clMoto,setClM,'Ej: Honda CB 150...'],['Placa',clPlaca,setClPl,'Ej: ABC-123'],
                           ['Notas',clNotas,setClNo,'Observaciones...']].map(([lbl,val,fn,ph])=>(
                           <FG key={lbl} lbl={lbl} ch={<Inp v={val} s={fn} ph={ph}/>}/>
                         ))}
+                        <FG lbl="¿Es empresa?" ch={
+                          <div style={{display:'flex',gap:8}}>
+                            <Btn onClick={()=>setClEmpresa(false)} col={!clEmpresa?C.bl:'ghost'} style={{flex:1,justifyContent:'center'}} ch="Persona natural"/>
+                            <Btn onClick={()=>setClEmpresa(true)} col={clEmpresa?C.bl:'ghost'} style={{flex:1,justifyContent:'center'}} ch="Empresa"/>
+                          </div>
+                        }/>
+                        {clEmpresa&&<FG lbl="NIT" ch={<Inp v={clNit} s={setClNit} ph="Ej: 900123456-7"/>}/>}
                         <Btn onClick={addCl} col={C.or} full ch="👤 Registrar Cliente"/>
                       </div>
                     }/>
@@ -2203,46 +2234,136 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
         );
       })()}/>
 
-      {/* Modal Ticket WhatsApp */}
-      <Modal open={!!ticket} onClose={()=>setTk(null)} maxW={340} ch={ticket&&(
-        <div>
-          <div style={{textAlign:'center',marginBottom:14}}>
-            <div style={{fontSize:20,fontWeight:900,color:C.or}}>🏍 ND MOTOS</div>
-            <div style={{fontSize:11,color:C.mu,marginTop:2}}>{fDT(ticket.fecha)}</div>
-          </div>
-          <div style={{borderTop:`1px dashed ${C.bo}`,borderBottom:`1px dashed ${C.bo}`,padding:'12px 0',marginBottom:12}}>
-            {ticket.items&&ticket.items.map((it,i)=>(
-              <div key={i} style={{display:'flex',justifyContent:'space-between',marginBottom:6,fontSize:13}}>
-                <span>{it.sv?'🔧 ':''}{it.nom} x{it.cant}</span>
-                <span style={{color:C.gr,fontWeight:700}}>{fm(it.pv*it.cant)}</span>
+      {/* Modal Factura */}
+      <Modal open={!!ticket} onClose={()=>setTk(null)} maxW={420} ch={ticket&&(()=>{
+        const d=new Date(ticket.fecha);
+        const numFact='NDM-'+d.getFullYear().toString().slice(2)+pad(d.getMonth()+1)+pad(d.getDate())+'-'+ticket.id.slice(-4).toUpperCase();
+        const subtotal=ticket.items?ticket.items.reduce((a,b)=>a+b.pv*b.cant,0):ticket.total;
+        const tieneIva=ticket.iva>0;
+        return (
+        <div id="facturaPrint" style={{background:'#fff',color:'#1a1a1a',padding:24,borderRadius:8,fontFamily:'Arial,sans-serif'}}>
+          {/* Encabezado */}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',borderBottom:'3px solid '+C.or,paddingBottom:14,marginBottom:14}}>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <img src={LOGO} alt="ND Motos" style={{width:50,height:50,borderRadius:8,objectFit:'cover'}}/>
+              <div>
+                <div style={{fontSize:20,fontWeight:900,color:C.or,letterSpacing:1}}>ND MOTOS</div>
+                <div style={{fontSize:10,color:'#666'}}>Repuestos y Servicio Tecnico</div>
+                {negNit&&<div style={{fontSize:10,color:'#666'}}>NIT: {negNit}</div>}
               </div>
-            ))}
-          </div>
-          <div style={{marginBottom:14}}>
-            <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}><span style={{color:C.mu,fontSize:12}}>Cliente:</span><b>{ticket.cliente}</b></div>
-            <div style={{display:'flex',justifyContent:'space-between',marginBottom:10}}><span style={{color:C.mu,fontSize:12}}>Pago:</span><b>{ticket.pago}</b></div>
-            <div style={{display:'flex',justifyContent:'space-between',paddingTop:10,borderTop:`1px dashed ${C.bo}`}}>
-              <span style={{fontSize:14,fontWeight:700}}>TOTAL</span>
-              <span style={{fontSize:22,fontWeight:800,color:C.gr}}>{fm(ticket.total)}</span>
+            </div>
+            <div style={{textAlign:'right'}}>
+              <div style={{fontSize:11,color:'#666',textTransform:'uppercase',fontWeight:700}}>Factura de Venta</div>
+              <div style={{fontSize:16,fontWeight:800,color:'#1a1a1a'}}>No. {numFact}</div>
+              <div style={{fontSize:11,color:'#666',marginTop:2}}>{pad(d.getDate())}/{pad(d.getMonth()+1)}/{d.getFullYear()} - {pad(d.getHours())}:{pad(d.getMinutes())}</div>
             </div>
           </div>
-          <div style={{display:'flex',gap:10}}>
+
+          {/* Cliente */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14,fontSize:12}}>
+            <div>
+              <div style={{color:'#999',fontSize:10,textTransform:'uppercase',fontWeight:700}}>{ticket.clienteEmpresa?'Razon Social':'Cliente'}</div>
+              <div style={{fontWeight:700,fontSize:14}}>{ticket.cliente}</div>
+              {ticket.clienteNit&&<div style={{fontSize:11,color:'#666'}}>NIT: {ticket.clienteNit}</div>}
+              {ticket.clienteEmail&&<div style={{fontSize:11,color:'#666'}}>{ticket.clienteEmail}</div>}
+            </div>
+            <div style={{textAlign:'right'}}>
+              <div style={{color:'#999',fontSize:10,textTransform:'uppercase',fontWeight:700}}>Forma de Pago</div>
+              <div style={{fontWeight:700,fontSize:14}}>{ticket.pago}</div>
+            </div>
+          </div>
+
+          {/* Tabla de items */}
+          <table style={{width:'100%',borderCollapse:'collapse',marginBottom:14}}>
+            <thead>
+              <tr style={{background:'#1a1a1a'}}>
+                <th style={{color:'#fff',fontSize:11,padding:'8px 6px',textAlign:'left',textTransform:'uppercase'}}>Descripcion</th>
+                <th style={{color:'#fff',fontSize:11,padding:'8px 6px',textAlign:'center',textTransform:'uppercase'}}>Cant</th>
+                <th style={{color:'#fff',fontSize:11,padding:'8px 6px',textAlign:'right',textTransform:'uppercase'}}>Precio</th>
+                <th style={{color:'#fff',fontSize:11,padding:'8px 6px',textAlign:'right',textTransform:'uppercase'}}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ticket.items&&ticket.items.map((it,i)=>(
+                <tr key={i} style={{borderBottom:'1px solid #e5e5e5'}}>
+                  <td style={{fontSize:12,padding:'8px 6px'}}>{it.sv?'🔧 ':''}{it.nom}</td>
+                  <td style={{fontSize:12,padding:'8px 6px',textAlign:'center'}}>{it.cant}</td>
+                  <td style={{fontSize:12,padding:'8px 6px',textAlign:'right'}}>{fm(it.pv)}</td>
+                  <td style={{fontSize:12,padding:'8px 6px',textAlign:'right',fontWeight:700}}>{fm(it.pv*it.cant)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Totales */}
+          <div style={{display:'flex',justifyContent:'flex-end',marginBottom:14}}>
+            <div style={{width:220}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'4px 0'}}>
+                <span style={{color:'#666'}}>Subtotal</span>
+                <span style={{fontWeight:600}}>{fm(subtotal)}</span>
+              </div>
+              {tieneIva&&(
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'4px 0'}}>
+                  <span style={{color:'#666'}}>IVA</span>
+                  <span style={{fontWeight:600}}>{fm(ticket.total-subtotal)}</span>
+                </div>
+              )}
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:18,fontWeight:900,
+                borderTop:'2px solid '+C.or,paddingTop:8,marginTop:6,color:C.or}}>
+                <span>TOTAL</span>
+                <span>{fm(ticket.total)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{borderTop:'1px solid #e5e5e5',paddingTop:10,textAlign:'center',fontSize:10,color:'#999'}}>
+            <div style={{fontFamily:'monospace',fontSize:9,marginBottom:6,wordBreak:'break-all'}}>CUFE: {numFact}-{ticket.id}</div>
+            <div>Gracias por su compra</div>
+            <div>Este documento es un comprobante de venta y no constituye factura electronica DIAN</div>
+          </div>
+
+          {/* Botones (no se imprimen) */}
+          <div className="no-print" style={{display:'flex',gap:10,marginTop:16}}>
             <Btn onClick={()=>{
-              const d=new Date(ticket.fecha);
-              let txt='🏍 *ND MOTOS*\n📅 '+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+'\n👤 '+ticket.cliente+'\n━━━━━━━━━━━━\n';
+              let txt='🏍 *ND MOTOS*\n📄 Factura No. '+numFact+'\n📅 '+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+'\n👤 '+ticket.cliente+'\n━━━━━━━━━━━━\n';
               if(ticket.items) ticket.items.forEach(it=>{ txt+=(it.sv?'🔧 ':'')+it.nom+' x'+it.cant+' - '+fm(it.pv*it.cant)+'\n'; });
               txt+='━━━━━━━━━━━━\n💰 *TOTAL: '+fm(ticket.total)+'*\n💳 '+ticket.pago;
               window.open('https://wa.me/?text='+encodeURIComponent(txt));
-            }} col={C.gr} style={{flex:1,justifyContent:'center'}} ch="📲 Enviar por WhatsApp"/>
+            }} col={C.gr} style={{flex:1,justifyContent:'center'}} ch="📲 WhatsApp"/>
+            <Btn onClick={()=>{
+              const subject='Factura ND Motos No. '+numFact;
+              let body='Factura No. '+numFact+'\nFecha: '+pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+'\nCliente: '+ticket.cliente+'\n\n';
+              if(ticket.items) ticket.items.forEach(it=>{ body+=(it.sv?'[Servicio] ':'')+it.nom+' x'+it.cant+' - '+fm(it.pv*it.cant)+'\n'; });
+              body+='\nTOTAL: '+fm(ticket.total)+'\nForma de pago: '+ticket.pago;
+              const mailto=(ticket.clienteEmail||'')+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+              window.open('mailto:'+mailto);
+            }} col={C.pu} style={{flex:1,justifyContent:'center'}} ch="✉️ Correo"/>
+            <Btn onClick={()=>{
+              const printContent=document.getElementById('facturaPrint').cloneNode(true);
+              const noprint=printContent.querySelector('.no-print');
+              if(noprint) noprint.remove();
+              const w=window.open('','_blank');
+              w.document.write('<html><head><title>Factura '+numFact+'</title><style>body{font-family:Arial,sans-serif;padding:20px;}</style></head><body>'+printContent.innerHTML+'</body></html>');
+              w.document.close();
+              setTimeout(()=>w.print(),300);
+            }} col={C.bl} style={{flex:1,justifyContent:'center'}} ch="🖨 Imprimir / PDF"/>
             <Btn onClick={()=>setTk(null)} col="ghost" ch="✕"/>
           </div>
         </div>
-      )}/>
+        );
+      })()}/>
 
       {/* Modal Backup */}
       <Modal open={showBackup} onClose={()=>setShowBackup(false)} ch={
         <div>
           <div style={{fontSize:18,fontWeight:800,color:C.or,marginBottom:16}}>💾 Backup de Datos</div>
+
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.tx,marginBottom:8}}>🏢 Datos del Negocio (para facturas)</div>
+            <FG lbl="NIT de ND Motos" ch={<Inp v={negNit} s={sNegNit} ph="Ej: 900123456-7"/>}/>
+          </div>
+          <div style={{height:1,background:C.bo,margin:'16px 0'}}/>
 
           <div style={{background:'rgba(255,107,26,.1)',border:`1px solid ${C.or}`,borderRadius:10,padding:14,marginBottom:16,fontSize:12,color:C.tx}}>
             ⚠️ Los datos no se guardan automáticamente al cerrar la app. Usa este backup para no perder nada.
