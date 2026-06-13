@@ -348,55 +348,46 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     const tvT=ven2.reduce((a,b)=>a+b.total,0),tvG=ven2.reduce((a,b)=>a+b.ganancia,0),tGa=gas2.reduce((a,b)=>a+b.monto,0);
     const vInvC=rInv.current.reduce((a,p)=>a+p.pc*p.stock,0), vInvV=rInv.current.reduce((a,p)=>a+p.pv*p.stock,0);
 
-    // Archivo 1: Contabilidad
-    let csv1='ND MOTOS - CONTABILIDAD\n';
-    csv1+='Periodo,'+(de||'Inicio')+' al '+(ha||'Hoy')+'\n\n';
-    csv1+='VENTAS\nFecha,Cliente,Descripcion,Total,Ganancia,Pago\n';
-    ven2.forEach(v=>{csv1+=v.fecha.slice(0,10)+','+(v.cliente||'')+','+(v.desc||'').replace(/,/g,' ')+','+v.total+','+v.ganancia+','+v.pago+'\n';});
-    csv1+='\n,,TOTAL VENTAS,'+tvT+'\n,,TOTAL GANANCIA,'+tvG+'\n\n';
-    csv1+='GASTOS\nFecha,Tipo,Descripcion,Monto,Pago\n';
-    gas2.forEach(g=>{csv1+=g.fecha.slice(0,10)+','+(g.tipo||'')+','+(g.desc||'').replace(/,/g,' ')+','+g.monto+','+g.pago+'\n';});
-    csv1+='\n,,TOTAL GASTOS,'+tGa+'\n\n';
-    csv1+='COMPRAS\nFecha,Proveedor,Descripcion,Total,Pago\n';
-    com2.forEach(c=>{csv1+=c.fecha.slice(0,10)+','+(c.proveedor||'')+','+(c.desc||'').replace(/,/g,' ')+','+c.total+','+c.pago+'\n';});
-    csv1+='\nNOMINA\nFecha,Empleado,Cargo,Periodo,Monto,Pago\n';
-    emp2.forEach(e=>{csv1+=e.fecha.slice(0,10)+','+(e.nombre||'')+','+(e.cargo||'')+','+(e.periodo||'')+','+e.monto+','+e.pago+'\n';});
-    csv1+='\nRESUMEN GENERAL\nConcepto,Valor\n';
-    csv1+='Ventas Totales,'+tvT+'\n';
-    csv1+='Ganancia Bruta,'+tvG+'\n';
-    csv1+='Gastos Totales,'+tGa+'\n';
-    csv1+='Utilidad Neta,'+(tvG-tGa)+'\n';
-    csv1+='Inventario (precio compra),'+vInvC+'\n';
-    csv1+='Inventario (precio venta),'+vInvV+'\n';
+    let csv='ND MOTOS - REPORTE\n';
+    csv+='Periodo,'+(de||'Inicio')+' al '+(ha||'Hoy')+'\n\n';
 
-    // Archivo 2: Inventario - una fila por producto, columnas claras
-    let csv2='REFERENCIA,CATEGORIA,PRODUCTO,PRECIO COMPRA,PRECIO VENTA,STOCK,VALOR TOTAL COMPRA,VALOR TOTAL VENTA\n';
+    csv+='=== VENTAS ===\nFecha,Cliente,Descripcion,Total,Ganancia,Pago\n';
+    ven2.forEach(v=>{csv+=v.fecha.slice(0,10)+','+(v.cliente||'')+','+(v.desc||'').replace(/,/g,' ')+','+v.total+','+v.ganancia+','+v.pago+'\n';});
+    csv+=',,TOTAL,'+tvT+','+tvG+'\n\n';
+
+    csv+='=== GASTOS ===\nFecha,Tipo,Descripcion,Monto,Pago\n';
+    gas2.forEach(g=>{csv+=g.fecha.slice(0,10)+','+(g.tipo||'')+','+(g.desc||'').replace(/,/g,' ')+','+g.monto+','+g.pago+'\n';});
+    csv+=',,TOTAL,'+tGa+'\n\n';
+
+    csv+='=== COMPRAS ===\nFecha,Proveedor,Descripcion,Total,Pago\n';
+    com2.forEach(c=>{csv+=c.fecha.slice(0,10)+','+(c.proveedor||'')+','+(c.desc||'').replace(/,/g,' ')+','+c.total+','+c.pago+'\n';});
+    csv+='\n=== NOMINA ===\nFecha,Empleado,Cargo,Periodo,Monto,Pago\n';
+    emp2.forEach(e=>{csv+=e.fecha.slice(0,10)+','+(e.nombre||'')+','+(e.cargo||'')+','+(e.periodo||'')+','+e.monto+','+e.pago+'\n';});
+
+    csv+='\n=== RESUMEN GENERAL ===\nConcepto,Valor\n';
+    csv+='Ventas Totales,'+tvT+'\n';
+    csv+='Ganancia Bruta,'+tvG+'\n';
+    csv+='Gastos Totales,'+tGa+'\n';
+    csv+='Utilidad Neta,'+(tvG-tGa)+'\n';
+    csv+='Inventario (precio compra),'+vInvC+'\n';
+    csv+='Inventario (precio venta),'+vInvV+'\n';
+
+    csv+='\n\n=== INVENTARIO ('+rInv.current.length+' productos) ===\n';
+    csv+='Referencia,Categoria,Producto,Precio Compra,Precio Venta,Stock,Valor Total Compra,Valor Total Venta\n';
     rInv.current.forEach(p=>{
       const nombre='"'+p.nom.replace(/"/g,'')+'"';
       const cat='"'+p.cat.replace(/"/g,'')+'"';
-      csv2+=p.id+','+cat+','+nombre+','+p.pc+','+p.pv+','+p.stock+','+(p.pc*p.stock)+','+(p.pv*p.stock)+'\n';
+      csv+=p.id+','+cat+','+nombre+','+p.pc+','+p.pv+','+p.stock+','+(p.pc*p.stock)+','+(p.pv*p.stock)+'\n';
     });
-    csv2+='\n,,,,,TOTALES,'+vInvC+','+vInvV+'\n';
+    csv+=',,,,TOTALES,,'+vInvC+','+vInvV+'\n';
 
-    // Descargar archivo 1
-    const b1=new Blob(['\uFEFF'+csv1],{type:'text/csv;charset=utf-8'});
-    const u1=URL.createObjectURL(b1);
-    const a1=document.createElement('a');
-    a1.href=u1;a1.download='ndmotos_contabilidad_'+(de||'inicio')+'_al_'+(ha||'hoy')+'.csv';
-    document.body.appendChild(a1);a1.click();document.body.removeChild(a1);
-    URL.revokeObjectURL(u1);
-
-    // Descargar archivo 2 (con pequeno delay para que el navegador no bloquee)
-    setTimeout(()=>{
-      const b2=new Blob(['\uFEFF'+csv2],{type:'text/csv;charset=utf-8'});
-      const u2=URL.createObjectURL(b2);
-      const a2=document.createElement('a');
-      a2.href=u2;a2.download='ndmotos_inventario_'+hoy()+'.csv';
-      document.body.appendChild(a2);a2.click();document.body.removeChild(a2);
-      URL.revokeObjectURL(u2);
-    },300);
-
-    toast2('2 archivos exportados (contabilidad e inventario)','ok');
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='ndmotos_reporte_'+(de||'inicio')+'_al_'+(ha||'hoy')+'.csv';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast2('Reporte exportado. Abrelo en Excel','ok');
   };
 
   const importarDatos = () => {
