@@ -438,6 +438,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   const [vPago,setVPg]=useState('Efectivo'); const [vTipo,setVT]=useState('prod');
   const [vST,setVST]=useState('Cambio de aceite'); const [vSD,setVSD]=useState('');
   const [vSC,setVSC]=useState('0'); const [vSP,setVSP]=useState('');
+  const [vDNom,setVDNom]=useState(''); const [vDPc,setVDPc]=useState(''); const [vDPv,setVDPv]=useState('');
   const [ticket,setTk]=useState(null);
   const [editVenta,setEditVenta]=useState(null);
   const [vTecnico,setVTecnico]=useState('');
@@ -507,7 +508,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     let total=0, ganancia=0;
     vItems.forEach(it=>{total+=it.pv*it.cant;ganancia+=(it.pv-it.pc)*it.cant;});
     const desc=vItems.map(it=>it.cant+'x '+it.nom).join(', ');
-    const newInv=inv.map(p=>{const it=vItems.find(x=>x.id===p.id);return it&&!it.sv?{...p,stock:p.stock-it.cant}:p;});
+    const newInv=inv.map(p=>{const it=vItems.find(x=>x.id===p.id);return it&&!it.sv&&!it.directo?{...p,stock:p.stock-it.cant}:p;});
     const subtotalCalc=vItems.reduce((a,b)=>a+b.pv*b.cant,0);
     if(ivaActivo) total=Math.round(subtotalCalc*(1+IVA2));
     const ivaMonto=ivaActivo?(total-subtotalCalc):0;
@@ -516,7 +517,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     sVen([...rVen.current,venta]);
     if(vPago==='Fiado') sFia([...rFia.current,{id:uid(),nombre:vCli2||'Cliente',tel:'',desc,valor:total,fecha:new Date().toISOString(),vence:'',pagado:false}]);
     setTk(venta);
-    setVI([]);setVB('');setVS(null);setVC('1');setVPr('');setVCl('');setVClObj(null);setVTecnico('');setEditVenta(null);
+    setVI([]);setVB('');setVS(null);setVC('1');setVPr('');setVCl('');setVClObj(null);setVTecnico('');setEditVenta(null);setVDNom('');setVDPc('');setVDPv('');
     toast2('Venta de '+fm(total)+' registrada','ok');
   };
 
@@ -893,8 +894,9 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   }/>
                   <FG lbl="Forma de Pago" ch={<Sel v={vPago} s={setVPg} opts={PAGOS}/>}/>
                   <div style={{display:'flex',gap:8,marginBottom:12}}>
-                    <Btn onClick={()=>setVT('prod')} col={vTipo==='prod'?C.bl:'ghost'} style={{flex:1,justifyContent:'center'}} ch="🔩 Producto"/>
+                    <Btn onClick={()=>setVT('prod')} col={vTipo==='prod'?C.bl:'ghost'} style={{flex:1,justifyContent:'center'}} ch="🔩 Inventario"/>
                     <Btn onClick={()=>setVT('serv')} col={vTipo==='serv'?C.bl:'ghost'} style={{flex:1,justifyContent:'center'}} ch="🔧 Servicio"/>
+                    <Btn onClick={()=>setVT('directo')} col={vTipo==='directo'?C.gr:'ghost'} style={{flex:1,justifyContent:'center'}} ch="💰 Venta Directa"/>
                   </div>
 
                   {vTipo==='prod'&&(
@@ -905,6 +907,27 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                         <FG lbl="Precio Venta ($)" ch={<Inp v={vPrecio} s={setVPr} type="number" ph="0" style={{borderColor:C.or}}/>}/>
                       </div>
                       <Btn onClick={addItem} col={C.bl} full ch="+ Agregar producto" style={{marginBottom:12}}/>
+                    </div>
+                  )}
+
+                  {vTipo==='directo'&&(
+                    <div>
+                      <FG lbl="Nombre del producto" ch={<Inp v={vDNom} s={setVDNom} ph="Ej: Aceite 20W50, Llanta..."/>}/>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                        <FG lbl="Precio de compra ($)" ch={<Inp v={vDPc} s={setVDPc} type="number" ph="0"/>}/>
+                        <FG lbl="Precio de venta ($)" ch={<Inp v={vDPv} s={setVDPv} type="number" ph="0" style={{borderColor:C.gr}}/>}/>
+                      </div>
+                      {vDPc&&vDPv&&<div style={{background:'rgba(34,197,94,.1)',borderRadius:8,padding:'8px 12px',marginBottom:10,fontSize:13}}>
+                        Ganancia: <span style={{color:C.gr,fontWeight:800}}>{fm(parseFloat(vDPv||0)-parseFloat(vDPc||0))}</span>
+                      </div>}
+                      <Btn onClick={()=>{
+                        const pc=parseFloat(vDPc)||0, pv=parseFloat(vDPv)||0;
+                        if(!vDNom.trim()) return toast2('Escribe el nombre del producto','err');
+                        if(!pv) return toast2('Ingresa el precio de venta','err');
+                        setVI([...vItems,{id:'D'+uid(),nom:vDNom.trim(),pv,pc,cant:1,sv:false,directo:true}]);
+                        setVDNom('');setVDPc('');setVDPv('');
+                        toast2('Producto agregado','ok');
+                      }} col={C.gr} full ch="+ Agregar Venta Directa" style={{marginBottom:12}}/>
                     </div>
                   )}
 
@@ -1857,16 +1880,16 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                           const tTL=peL.reduce((a,b)=>a+b.valor,0);
                           const tieneL=tTL>0;
                           return [
-                            {lbl:'Hoy',val:tH,valL:tHL,col:C.bl},
-                            {lbl:'Esta semana',val:tS,valL:tSL,col:C.cy},
-                            {lbl:'Este mes',val:tM,valL:tML,col:C.or},
-                            {lbl:'Total',val:tT,valL:tTL,col:C.pu}
+                            {lbl:'Hoy',tot:tH+tHL,t:tH,l:tHL,col:C.bl},
+                            {lbl:'Esta semana',tot:tS+tSL,t:tS,l:tSL,col:C.cy},
+                            {lbl:'Este mes',tot:tM+tML,t:tM,l:tML,col:C.or},
+                            {lbl:'Total',tot:tT+tTL,t:tT,l:tTL,col:C.pu}
                           ].map((it,i)=>(
                             <div key={i} style={{background:C.su,borderRadius:8,padding:10,textAlign:'center'}}>
                               <div style={{fontSize:9,color:C.mu,textTransform:'uppercase',marginBottom:3}}>{it.lbl}</div>
-                              <div style={{fontSize:14,fontWeight:800,color:it.col}}>{fm(it.val+it.valL)}</div>
-                              {tieneL&&<div style={{fontSize:9,color:C.cy,marginTop:1}}>🔧{fm(it.val)} 🚿{fm(it.valL)}</div>}
-                              <div style={{fontSize:9,color:C.gr,marginTop:2}}>{e2.pct}%: {fm(Math.round((it.val+it.valL)*(e2.pct/100)))}</div>
+                              <div style={{fontSize:16,fontWeight:800,color:it.col}}>{fm(it.tot)}</div>
+                              {tieneL&&<div style={{fontSize:9,color:C.mu,marginTop:1}}>🔧{fm(it.t)} + 🚿{fm(it.l)}</div>}
+                              <div style={{fontSize:9,color:C.gr,marginTop:2}}>{e2.pct}%: {fm(Math.round(it.tot*(e2.pct/100)))}</div>
                             </div>
                           ));
                         })()}
@@ -1919,6 +1942,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                                 sEmp([...rEmp.current,{id:uid(),fecha:hoy(),nombre:e2.nom,cargo:'Produccion (Taller'+(tSL2>0?'+Lavadero':'')+')',periodo:sem.ini+' al '+sem.fin,monto:totalPago,pago:'Efectivo'}]);
                                 sEmpProd(empProd.map(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin?{...p,pagado:true}:p));
                                 if(tSL2>0) sLavProd(rLavProd.current.map(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin?{...p,pagado:true}:p));
+                                else sLavProd(rLavProd.current);
                                 sAdelantos(rAdelantos.current.map(a=>a.nom===e2.nom&&!a.pagado?{...a,pagado:true}:a));
                                 toast2('Pago total de '+fm(totalPago)+' a '+e2.nom+' registrado','ok');
                               }} ch="✅ Registrar pago"/>
