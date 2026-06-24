@@ -1896,15 +1896,31 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                               <div>
                                 <div style={{fontSize:11,color:C.cy,fontWeight:700}}>💰 Pago a {e2.nom}</div>
                                 <div style={{fontSize:12,color:C.mu}}>Semana del {sem.ini} al {sem.fin}</div>
-                                <div style={{fontSize:12,color:C.gr}}>Producción ({e2.pct}%): {fm(pagoSem)}</div>
+                                <div style={{fontSize:12,color:C.gr}}>🔧 Taller ({e2.pct}%): {fm(pagoSem)}</div>
+                                {(()=>{
+                                  const peL3=lavProd.filter(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado);
+                                  const tSL3=peL3.reduce((a,b)=>a+b.valor,0);
+                                  const lavObj3=lavEmps.find(e=>e.nom===e2.nom);
+                                  const pctL3=lavObj3?lavObj3.pct:e2.pct;
+                                  const pagoLav3=Math.round(tSL3*(pctL3/100));
+                                  return tSL3>0&&<div style={{fontSize:12,color:C.cy}}>🚿 Lavadero ({pctL3}%): {fm(pagoLav3)}</div>;
+                                })()}
                                 {totalAdel>0&&<div style={{fontSize:12,color:C.re}}>Adelantos: -{fm(totalAdel)}</div>}
-                                <div style={{fontSize:15,fontWeight:800,color:C.gr}}>A pagar: {fm(pagoReal)}</div>
+                                <div style={{fontSize:15,fontWeight:800,color:C.gr}}>A pagar: {fm(pagoReal+(()=>{const peL3=lavProd.filter(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado);const tSL3=peL3.reduce((a,b)=>a+b.valor,0);const lavObj3=lavEmps.find(e=>e.nom===e2.nom);return Math.round(tSL3*((lavObj3?lavObj3.pct:e2.pct)/100));})())}</div>
                               </div>
                               <Btn sm col={C.gr} onClick={()=>{
-                                sEmp([...rEmp.current,{id:uid(),fecha:hoy(),nombre:e2.nom,cargo:'Produccion',periodo:sem.ini+' al '+sem.fin,monto:pagoReal,pago:'Efectivo'}]);
+                                // Produccion lavadero de esta semana
+                                const peL2=lavProd.filter(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado);
+                                const tSL2=peL2.reduce((a,b)=>a+b.valor,0);
+                                const lavObj2=lavEmps.find(e=>e.nom===e2.nom);
+                                const pctL2=lavObj2?lavObj2.pct:e2.pct;
+                                const pagoLav2=Math.round(tSL2*(pctL2/100));
+                                const totalPago=pagoReal+pagoLav2;
+                                sEmp([...rEmp.current,{id:uid(),fecha:hoy(),nombre:e2.nom,cargo:'Produccion (Taller'+(tSL2>0?'+Lavadero':'')+')',periodo:sem.ini+' al '+sem.fin,monto:totalPago,pago:'Efectivo'}]);
                                 sEmpProd(empProd.map(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin?{...p,pagado:true}:p));
+                                if(tSL2>0) sLavProd(rLavProd.current.map(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin?{...p,pagado:true}:p));
                                 sAdelantos(rAdelantos.current.map(a=>a.nom===e2.nom&&!a.pagado?{...a,pagado:true}:a));
-                                toast2('Pago de '+fm(pagoReal)+' a '+e2.nom+' registrado','ok');
+                                toast2('Pago total de '+fm(totalPago)+' a '+e2.nom+' registrado','ok');
                               }} ch="✅ Registrar pago"/>
                             </div>
                           </div>
