@@ -666,6 +666,9 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   // ── FORMULARIO EMPLEADOS ──
   const [epEmp,setEpEmp]=useState('');
   const [adelModal,setAdelModal]=useState(null);
+  const [cierreModal,setCierreModal]=useState(false);
+  const [cierreMonto,setCierreMonto]=useState('');
+  const [cajaCalc,setCajaCalc]=useState(0);
   const [adelMonto,setAdelMonto]=useState('');
   const [adelDesc,setAdelDesc]=useState('');
   const [adelFecha,setAdelFecha]=useState(''); const [epNomNuevo,setEpNomNuevo]=useState('');
@@ -833,12 +836,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   </div>
 
                   <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
-                    <Btn onClick={()=>{
-                      if(!confirm('¿Cerrar caja? El saldo ('+fm(caja2)+') quedará como nuevo saldo inicial.')) return;
-                      sCajaCierres([...rCajaCierres.current,{id:uid(),fecha:new Date().toISOString(),saldo:caja2}]);
-                      sCajaInicial(caja2);
-                      toast2('Caja cerrada. Nuevo saldo: '+fm(caja2),'ok');
-                    }} col={C.bl} ch="🔒 Cerrar Caja"/>
+                    <Btn onClick={()=>{setCajaCalc(caja2);setCierreMonto('0');setCierreModal(true);}} col={C.bl} ch="🔒 Cerrar Caja"/>
                     {cajaCierres.length>0&&<div style={{fontSize:11,color:C.mu}}>Ultimo cierre: {fDT(cajaCierres[cajaCierres.length-1].fecha)} · Saldo: {fm(cajaCierres[cajaCierres.length-1].saldo)}</div>}
                   </div>
                 </div>
@@ -1735,7 +1733,14 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                                   <TD style={{fontSize:12}} ch={f2.desc||'-'}/>
                                   <TD style={{color:C.pu,fontWeight:700}} ch={fm(f2.valor)}/>
                                   <TD style={{fontSize:12,color:vencido?C.re:C.mu}} ch={(f2.vence?fD(f2.vence):'Sin fecha')+(vencido?' ⚠':'')}/>
-                                 <TD ch={<div style={{display:'flex',gap:4}}><Btn sm col={C.gr} onClick={()=>sFia(fia.map(x=>x.id===f2.id?{...x,pagado:true,fechaPago:new Date().toISOString()}:x))} ch="✓ Pago"/><Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sFia(fia.filter(x=>x.id!==f2.id));}} ch="🗑"/></div>}/>                                 </tr>
+                                 <TD ch={<div style={{display:'flex',gap:4}}><Btn sm col={C.gr} onClick={()=>{
+                                      const fechaPagoNow=new Date().toISOString();
+                                      sFia(fia.map(x=>x.id===f2.id?{...x,pagado:true,fechaPago:fechaPagoNow}:x));
+                                      sVen([...rVen.current,{id:uid(),fecha:fechaPagoNow,tipo:'venta',
+                                        cliente:f2.nombre,desc:'💳 Cobro fiado: '+(f2.desc||''),
+                                        total:f2.valor,ganancia:f2.valor,pago:'Efectivo',items:[]}]);
+                                      toast2('Fiado cobrado y registrado en ventas','ok');
+                                    }} ch="✓ Pago"/><Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sFia(fia.filter(x=>x.id!==f2.id));}} ch="🗑"/></div>}/>                                 </tr>
                               );
                             })}
                             {!fPend.length&&<tr><td colSpan={6} style={{textAlign:'center',padding:28,color:C.mu}}>✅ Sin fiados pendientes</td></tr>}
@@ -2377,6 +2382,47 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
       {/* ╔══════════════════════════════╗ */}
       {/* ║           MODALES            ║ */}
       {/* ╚══════════════════════════════╝ */}
+
+      {/* Modal Cierre de Caja */}
+      <Modal open={cierreModal} onClose={()=>setCierreModal(false)} ch={
+        <div>
+          <div style={{fontSize:18,fontWeight:800,color:C.ye,marginBottom:4}}>🔒 Cerrar Caja</div>
+          <div style={{fontSize:12,color:C.mu,marginBottom:16}}>Total en caja: <span style={{color:C.ye,fontWeight:800}}>{fm(cajaCalc)}</span></div>
+          <div style={{background:'rgba(251,191,36,.1)',border:`1px solid ${C.ye}`,borderRadius:8,padding:12,marginBottom:16,fontSize:12,color:C.tx}}>
+            ¿Cuánto dinero dejas en la caja para el próximo período? El resto se entiende que lo retiraste (utilidades, sueldo socios, etc.)
+          </div>
+          <FG lbl="Monto que dejas en caja ($)" ch={
+            <Inp v={cierreMonto} s={setCierreMonto} type="number" ph="0" style={{borderColor:C.ye,fontSize:18,textAlign:'center'}}/>
+          }/>
+          {cierreMonto!==''&&(
+            <div style={{background:C.su,borderRadius:8,padding:12,marginBottom:12,fontSize:12}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                <span style={{color:C.mu}}>Total en caja</span>
+                <span style={{fontWeight:700}}>{fm(cajaCalc)}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                <span style={{color:C.mu}}>Dejas en caja</span>
+                <span style={{color:C.ye,fontWeight:700}}>{fm(parseFloat(cierreMonto)||0)}</span>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',borderTop:`1px solid ${C.bo}`,paddingTop:6}}>
+                <span style={{color:C.mu}}>Retiras</span>
+                <span style={{color:C.gr,fontWeight:800}}>{fm(Math.max(0,cajaCalc-(parseFloat(cierreMonto)||0)))}</span>
+              </div>
+            </div>
+          )}
+          <div style={{display:'flex',gap:10}}>
+            <Btn onClick={()=>{
+              const saldoNuevo=parseFloat(cierreMonto)||0;
+              if(saldoNuevo>cajaCalc) return toast2('No puedes dejar más de lo que hay en caja','err');
+              sCajaCierres([...rCajaCierres.current,{id:uid(),fecha:new Date().toISOString(),saldo:saldoNuevo,totalCaja:cajaCalc,retirado:cajaCalc-saldoNuevo}]);
+              sCajaInicial(saldoNuevo);
+              setCierreModal(false);
+              toast2('Caja cerrada. Saldo nuevo: '+fm(saldoNuevo)+' · Retiraste: '+fm(cajaCalc-saldoNuevo),'ok');
+            }} col={C.ye} style={{flex:1,justifyContent:'center'}} ch="🔒 Confirmar Cierre"/>
+            <Btn onClick={()=>setCierreModal(false)} col="ghost" ch="Cancelar"/>
+          </div>
+        </div>
+      }/>
 
       {/* Modal Adelanto */}
       <Modal open={!!adelModal} onClose={()=>setAdelModal(null)} ch={adelModal&&(
