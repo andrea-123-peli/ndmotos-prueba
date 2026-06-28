@@ -806,12 +806,18 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                     {fechaCorte&&<div style={{fontSize:10,color:C.mu}}>Desde: {fDT(fechaCorte)}</div>}
                   </div>
 
-                  {!ultimoCierre&&(
-                    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:C.su,borderRadius:8,padding:'8px 12px'}}>
-                      <span style={{fontSize:11,color:C.mu,whiteSpace:'nowrap'}}>Saldo inicial en caja ($):</span>
-                      <Inp v={cajaInicial||''} s={v=>sCajaInicial(parseFloat(v)||0)} type="number" ph="0" style={{maxWidth:130}}/>
-                    </div>
-                  )}
+                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10,background:C.su,borderRadius:8,padding:'8px 12px',flexWrap:'wrap'}}>
+                    <span style={{fontSize:11,color:C.mu,whiteSpace:'nowrap'}}>
+                      {ultimoCierre?'Saldo desde ultimo cierre:':'Saldo inicial en caja ($):'}
+                    </span>
+                    {!ultimoCierre
+                      ? <Inp v={cajaInicial||''} s={v=>sCajaInicial(parseFloat(v)||0)} type="number" ph="0" style={{maxWidth:130}}/>
+                      : <span style={{fontWeight:800,color:C.ye,fontSize:14}}>{fm(ultimoCierre.saldo)}</span>
+                    }
+                    {ultimoCierre&&<div style={{fontSize:10,color:C.mu,width:'100%'}}>
+                      Cierre: {fDT(ultimoCierre.fecha)} · Todo lo nuevo se acumula desde esa fecha
+                    </div>}
+                  </div>
 
                   <div style={{fontSize:10,color:C.gr,fontWeight:700,textTransform:'uppercase',marginBottom:6}}>📥 Entradas — {fm(saldoIni+totalEntradas)}</div>
                   {(()=>{
@@ -1962,10 +1968,12 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   const h3=hoy(), mes=h3.slice(0,7), sem=semana();
                   const pe=empProd.filter(p=>p.empleado===e2.nom);
                   const tH=pe.filter(p=>p.fecha===h3).reduce((a,b)=>a+b.valor,0);
-                  const tS=pe.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado).reduce((a,b)=>a+b.valor,0);
+                  const peSem=pe.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado);
+                  const tS=peSem.reduce((a,b)=>a+b.valor,0);
                   const tM=pe.filter(p=>p.fecha.slice(0,7)===mes).reduce((a,b)=>a+b.valor,0);
                   const tT=pe.reduce((a,b)=>a+b.valor,0);
-                  const pagoSem=Math.round(tS*(e2.pct/100));
+                  // Usar emp60 guardado en cada registro
+                  const pagoSem=peSem.reduce((a,b)=>a+(b.emp60||Math.round(b.valor*(b.pct||e2.pct)/100)),0);
                   return (
                     <div key={e2.nom} style={{background:C.ca,border:`1px solid ${C.bo}`,borderLeft:`4px solid ${C.bl}`,borderRadius:10,padding:14,marginBottom:10}}>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
@@ -2272,10 +2280,12 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   const h3=hoy(), mes=h3.slice(0,7), sem=semana();
                   const pe=lavProd.filter(p=>p.empleado===e2.nom);
                   const tH=pe.filter(p=>p.fecha===h3).reduce((a,b)=>a+b.valor,0);
-                  const tS=pe.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado).reduce((a,b)=>a+b.valor,0);
+                  const peSem=pe.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado);
+                  const tS=peSem.reduce((a,b)=>a+b.valor,0);
                   const tM=pe.filter(p=>p.fecha.slice(0,7)===mes).reduce((a,b)=>a+b.valor,0);
                   const tT=pe.reduce((a,b)=>a+b.valor,0);
-                  const pagoSem=Math.round(tS*(e2.pct/100));
+                  // Usar empParte guardado en cada registro (no recalcular con pct actual)
+                  const pagoSem=peSem.reduce((a,b)=>a+(b.empParte||Math.round(b.valor*(b.pct||e2.pct)/100)),0);
                   return (
                     <div key={e2.nom} style={{background:C.ca,border:`1px solid ${C.bo}`,borderLeft:`4px solid ${C.cy}`,borderRadius:10,padding:14}}>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
