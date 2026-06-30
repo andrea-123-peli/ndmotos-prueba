@@ -1968,11 +1968,12 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   const h3=hoy(), mes=h3.slice(0,7), sem=semana();
                   const pe=empProd.filter(p=>p.empleado===e2.nom);
                   const tH=pe.filter(p=>p.fecha===h3).reduce((a,b)=>a+b.valor,0);
-                  const peSem=pe.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado);
-                  const tS=peSem.reduce((a,b)=>a+b.valor,0);
+                  const peSemTodo=pe.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin);
+                  const peSem=peSemTodo.filter(p=>!p.pagado);
+                  const tS=peSemTodo.reduce((a,b)=>a+b.valor,0); // total semana (pagado o no)
                   const tM=pe.filter(p=>p.fecha.slice(0,7)===mes).reduce((a,b)=>a+b.valor,0);
                   const tT=pe.reduce((a,b)=>a+b.valor,0);
-                  // Usar emp60 guardado en cada registro
+                  // Solo lo pendiente para calcular pago
                   const pagoSem=peSem.reduce((a,b)=>a+(b.emp60||Math.round(b.valor*(b.pct||e2.pct)/100)),0);
                   return (
                     <div key={e2.nom} style={{background:C.ca,border:`1px solid ${C.bo}`,borderLeft:`4px solid ${C.bl}`,borderRadius:10,padding:14,marginBottom:10}}>
@@ -1993,33 +1994,24 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                         <span style={{fontSize:11,color:C.or}}>Neg: {100-e2.pct}%</span>
                       </div>
                       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:10}}>
-                        {(()=>{
-                          const peL=lavProd.filter(p=>p.empleado===e2.nom);
-                          const tHL=peL.filter(p=>p.fecha===h3).reduce((a,b)=>a+b.valor,0);
-                          const tSL=peL.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado).reduce((a,b)=>a+b.valor,0);
-                          const tML=peL.filter(p=>p.fecha.slice(0,7)===mes).reduce((a,b)=>a+b.valor,0);
-                          const tTL=peL.reduce((a,b)=>a+b.valor,0);
-                          const tieneL=tTL>0;
-                          return [
-                            {lbl:'Hoy',tot:tH+tHL,t:tH,l:tHL,col:C.bl},
-                            {lbl:'Esta semana',tot:tS+tSL,t:tS,l:tSL,col:C.cy},
-                            {lbl:'Este mes',tot:tM+tML,t:tM,l:tML,col:C.or},
-                            {lbl:'Total',tot:tT+tTL,t:tT,l:tTL,col:C.pu}
-                          ].map((it,i)=>(
-                            <div key={i} style={{background:C.su,borderRadius:8,padding:10,textAlign:'center'}}>
-                              <div style={{fontSize:9,color:C.mu,textTransform:'uppercase',marginBottom:3}}>{it.lbl}</div>
-                              <div style={{fontSize:16,fontWeight:800,color:it.col}}>{fm(it.tot)}</div>
-                              {tieneL&&<div style={{fontSize:9,color:C.mu,marginTop:1}}>🔧{fm(it.t)} + 🚿{fm(it.l)}</div>}
-                              <div style={{fontSize:9,color:C.gr,marginTop:2}}>{e2.pct}%: {fm(Math.round(it.tot*(e2.pct/100)))}</div>
-                            </div>
-                          ));
-                        })()}
+                        [
+                          {lbl:'Hoy',val:tH,col:C.bl},
+                          {lbl:'Esta semana',val:tS,col:C.cy},
+                          {lbl:'Este mes',val:tM,col:C.or},
+                          {lbl:'Total',val:tT,col:C.pu}
+                        ].map((it,i)=>(
+                          <div key={i} style={{background:C.su,borderRadius:8,padding:10,textAlign:'center'}}>
+                            <div style={{fontSize:9,color:C.mu,textTransform:'uppercase',marginBottom:3}}>{it.lbl}</div>
+                            <div style={{fontSize:16,fontWeight:800,color:it.col}}>{fm(it.val)}</div>
+                            <div style={{fontSize:9,color:C.gr,marginTop:2}}>{e2.pct}%: {fm(Math.round(it.val*(e2.pct/100)))}</div>
+                          </div>
+                        ))
                       </div>
                       {(()=>{
                         const adelEmp=adelantos.filter(a=>a.nom===e2.nom&&!a.pagado);
                         const totalAdel=adelEmp.reduce((a,b)=>a+b.monto,0);
                         const pagoReal=Math.max(0,pagoSem-totalAdel);
-                        return tS>0&&(
+                        return peSem.length>0&&(
                           <div>
                             {adelEmp.length>0&&(
                               <div style={{background:'rgba(239,68,68,.1)',border:`1px solid ${C.re}`,borderRadius:8,padding:'8px 12px',marginBottom:8}}>
@@ -2040,51 +2032,28 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                               <div>
                                 <div style={{fontSize:11,color:C.cy,fontWeight:700}}>💰 Pago a {e2.nom}</div>
                                 <div style={{fontSize:12,color:C.mu}}>Semana del {sem.ini} al {sem.fin}</div>
-                                {(()=>{
-                                  const peL3=lavProd.filter(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado);
-                                  const tSL3=peL3.reduce((a,b)=>a+b.valor,0);
-                                  const lavObj3=lavEmps.find(e=>e.nom===e2.nom);
-                                  const pctL3=lavObj3?lavObj3.pct:e2.pct;
-                                  const pagoLav3=Math.round(tSL3*(pctL3/100));
-                                  const totalAPagar=pagoSem+pagoLav3-totalAdel;
-                                  return (
-                                    <div>
-                                      <div style={{background:C.su,borderRadius:8,padding:'8px 12px',marginBottom:8}}>
-                                        <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3}}>
-                                          <span style={{color:C.mu}}>🔧 Taller ({e2.pct}% de {fm(tS)})</span>
-                                          <span style={{color:C.gr,fontWeight:700}}>{fm(pagoSem)}</span>
-                                        </div>
-                                        {tSL3>0&&<div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3}}>
-                                          <span style={{color:C.mu}}>🚿 Lavadero ({pctL3}% de {fm(tSL3)})</span>
-                                          <span style={{color:C.cy,fontWeight:700}}>{fm(pagoLav3)}</span>
-                                        </div>}
-                                        {totalAdel>0&&<div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3,borderTop:`1px solid ${C.bo}`,paddingTop:4}}>
-                                          <span style={{color:C.mu}}>Adelantos a descontar</span>
-                                          <span style={{color:C.re,fontWeight:700}}>-{fm(totalAdel)}</span>
-                                        </div>}
-                                        <div style={{display:'flex',justifyContent:'space-between',fontSize:15,fontWeight:800,borderTop:`1px solid ${C.bo}`,paddingTop:6,marginTop:4}}>
-                                          <span>Total a pagar</span>
-                                          <span style={{color:C.gr}}>{fm(Math.max(0,totalAPagar))}</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
+                                <div style={{background:C.su,borderRadius:8,padding:'8px 12px',marginBottom:8}}>
+                                  <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3}}>
+                                    <span style={{color:C.mu}}>🔧 Produccion semana ({e2.pct}% de {fm(tS)})</span>
+                                    <span style={{color:C.gr,fontWeight:700}}>{fm(pagoSem)}</span>
+                                  </div>
+                                  {totalAdel>0&&<div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3,borderTop:`1px solid ${C.bo}`,paddingTop:4}}>
+                                    <span style={{color:C.mu}}>Adelantos a descontar</span>
+                                    <span style={{color:C.re,fontWeight:700}}>-{fm(totalAdel)}</span>
+                                  </div>}
+                                  <div style={{display:'flex',justifyContent:'space-between',fontSize:15,fontWeight:800,borderTop:`1px solid ${C.bo}`,paddingTop:6,marginTop:4}}>
+                                    <span>Total a pagar</span>
+                                    <span style={{color:C.gr}}>{fm(pagoReal)}</span>
+                                  </div>
+                                </div>
                               </div>
                               <Btn sm col={C.gr} onClick={()=>{
                                 // Produccion lavadero de esta semana
-                                const peL2=lavProd.filter(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado);
-                                const tSL2=peL2.reduce((a,b)=>a+b.valor,0);
-                                const lavObj2=lavEmps.find(e=>e.nom===e2.nom);
-                                const pctL2=lavObj2?lavObj2.pct:e2.pct;
-                                const pagoLav2=Math.round(tSL2*(pctL2/100));
-                                const totalPago=pagoReal+pagoLav2;
-                                sEmp([...rEmp.current,{id:uid(),fecha:hoy(),nombre:e2.nom,cargo:'Produccion (Taller'+(tSL2>0?'+Lavadero':'')+')',periodo:sem.ini+' al '+sem.fin,monto:totalPago,pago:'Efectivo'}]);
+                                sEmp([...rEmp.current,{id:uid(),fecha:hoy(),nombre:e2.nom,cargo:'Taller',periodo:sem.ini+' al '+sem.fin,monto:pagoReal,pago:'Efectivo'}]);
+                                sGas([...rGas.current,{id:uid(),fecha:new Date().toISOString(),tipo:'Nomina',desc:'Pago '+e2.nom+' - Taller '+sem.ini+' al '+sem.fin,monto:pagoReal,pago:'Efectivo'}]);
                                 sEmpProd(empProd.map(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin?{...p,pagado:true}:p));
-                                if(tSL2>0) sLavProd(rLavProd.current.map(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin?{...p,pagado:true}:p));
-                                else sLavProd(rLavProd.current);
                                 sAdelantos(rAdelantos.current.map(a=>a.nom===e2.nom&&!a.pagado?{...a,pagado:true}:a));
-                                toast2('Pago total de '+fm(totalPago)+' a '+e2.nom+' registrado','ok');
+                                toast2('Pago de '+fm(pagoReal)+' a '+e2.nom+' (Taller) registrado','ok');
                               }} ch="✅ Registrar pago"/>
                             </div>
                           </div>
@@ -2280,11 +2249,12 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   const h3=hoy(), mes=h3.slice(0,7), sem=semana();
                   const pe=lavProd.filter(p=>p.empleado===e2.nom);
                   const tH=pe.filter(p=>p.fecha===h3).reduce((a,b)=>a+b.valor,0);
-                  const peSem=pe.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado);
-                  const tS=peSem.reduce((a,b)=>a+b.valor,0);
+                  const peSemTodo=pe.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin);
+                  const peSem=peSemTodo.filter(p=>!p.pagado);
+                  const tS=peSemTodo.reduce((a,b)=>a+b.valor,0); // total semana (pagado o no)
                   const tM=pe.filter(p=>p.fecha.slice(0,7)===mes).reduce((a,b)=>a+b.valor,0);
                   const tT=pe.reduce((a,b)=>a+b.valor,0);
-                  // Usar empParte guardado en cada registro (no recalcular con pct actual)
+                  // Solo lo pendiente para calcular pago
                   const pagoSem=peSem.reduce((a,b)=>a+(b.empParte||Math.round(b.valor*(b.pct||e2.pct)/100)),0);
                   return (
                     <div key={e2.nom} style={{background:C.ca,border:`1px solid ${C.bo}`,borderLeft:`4px solid ${C.cy}`,borderRadius:10,padding:14}}>
@@ -2317,7 +2287,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                         const adelEmpL=adelantos.filter(a=>a.nom===e2.nom&&!a.pagado);
                         const totalAdelL=adelEmpL.reduce((a,b)=>a+b.monto,0);
                         const pagoRealL=Math.max(0,pagoSem-totalAdelL);
-                        return tS>0&&(
+                        return peSem.length>0&&(
                           <div>
                             {adelEmpL.length>0&&(
                               <div style={{background:'rgba(239,68,68,.1)',border:`1px solid ${C.re}`,borderRadius:8,padding:'8px 12px',marginBottom:8}}>
