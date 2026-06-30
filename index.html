@@ -2011,7 +2011,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                         const adelEmp=adelantos.filter(a=>a.nom===e2.nom&&!a.pagado);
                         const totalAdel=adelEmp.reduce((a,b)=>a+b.monto,0);
                         const pagoReal=Math.max(0,pagoSem-totalAdel);
-                        return peSem.length>0&&(
+                        return pagoSem>0&&(
                           <div>
                             {adelEmp.length>0&&(
                               <div style={{background:'rgba(239,68,68,.1)',border:`1px solid ${C.re}`,borderRadius:8,padding:'8px 12px',marginBottom:8}}>
@@ -2287,7 +2287,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                         const adelEmpL=adelantos.filter(a=>a.nom===e2.nom&&!a.pagado);
                         const totalAdelL=adelEmpL.reduce((a,b)=>a+b.monto,0);
                         const pagoRealL=Math.max(0,pagoSem-totalAdelL);
-                        return peSem.length>0&&(
+                        return pagoSem>0&&(
                           <div>
                             {adelEmpL.length>0&&(
                               <div style={{background:'rgba(239,68,68,.1)',border:`1px solid ${C.re}`,borderRadius:8,padding:'8px 12px',marginBottom:8}}>
