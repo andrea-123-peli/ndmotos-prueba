@@ -1994,7 +1994,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                         <span style={{fontSize:11,color:C.or}}>Neg: {100-e2.pct}%</span>
                       </div>
                       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:10}}>
-                        [
+                        {[
                           {lbl:'Hoy',val:tH,col:C.bl},
                           {lbl:'Esta semana',val:tS,col:C.cy},
                           {lbl:'Este mes',val:tM,col:C.or},
@@ -2005,7 +2005,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                             <div style={{fontSize:16,fontWeight:800,color:it.col}}>{fm(it.val)}</div>
                             <div style={{fontSize:9,color:C.gr,marginTop:2}}>{e2.pct}%: {fm(Math.round(it.val*(e2.pct/100)))}</div>
                           </div>
-                        ))
+                        ))}
                       </div>
                       {(()=>{
                         const adelEmp=adelantos.filter(a=>a.nom===e2.nom&&!a.pagado);
