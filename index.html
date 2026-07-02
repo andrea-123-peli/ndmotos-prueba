@@ -2072,8 +2072,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                 <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:14,alignItems:'center'}}>
                   <select value={epFiltro} onChange={e=>setEpFiltro(e.target.value)}
                     style={{background:C.su,border:`1px solid ${C.bo}`,borderRadius:8,color:C.tx,fontSize:13,padding:'8px 12px',outline:'none',flex:1,minWidth:120}}>
-                    <option value="">Todos los empleados</option>
-                    {[...new Set([...emps.map(e=>e.nom),...lavEmps.map(e=>e.nom)])].map(nom=><option key={nom} value={nom}>{nom}</option>)}
+                    <option value="">Todos los tecnicos</option>
+                    {emps.map(e=><option key={e.nom} value={e.nom}>{e.nom}</option>)}
                   </select>
                   <Inp v={epFDe} s={setEpFDe} type="date" style={{width:150}}/>
                   <Inp v={epFHa} s={setEpFHa} type="date" style={{width:150}}/>
@@ -2085,19 +2085,12 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   }} ch="Mes"/>
                 </div>
                 {(()=>{
-                  const filT=empProd.filter(p=>{
+                  const fil=empProd.filter(p=>{
                     if(epFiltro&&p.empleado!==epFiltro) return false;
                     if(epFDe&&p.fecha<epFDe) return false;
                     if(epFHa&&p.fecha>epFHa) return false;
                     return true;
-                  });
-                  const filL=lavProd.filter(p=>{
-                    if(epFiltro&&p.empleado!==epFiltro) return false;
-                    if(epFDe&&p.fecha<epFDe) return false;
-                    if(epFHa&&p.fecha>epFHa) return false;
-                    return true;
-                  }).map(p=>({...p,emp60:p.empParte,neg40:p.negParte,desc:p.servicio,tipo:'🚿 Lavadero'}));
-                  const fil=[...filT.map(p=>({...p,tipo:'🔧 Taller'})),...filL].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+                  }).map(p=>({...p,tipo:'🔧 Taller'})).sort((a,b)=>b.fecha.localeCompare(a.fecha));
                   const totVal=fil.reduce((a,b)=>a+b.valor,0);
                   const filPend=fil.filter(p=>!p.pagado);
                   const tot60=filPend.reduce((a,b)=>a+(b.emp60||0),0); // solo pendiente
@@ -2125,13 +2118,12 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                       )}
                       <div style={{overflowX:'auto'}}>
                         <table style={{width:'100%',borderCollapse:'collapse'}}>
-                          <thead><tr><TH ch="Fecha"/><TH ch="Empleado"/><TH ch="Tipo"/><TH ch="Servicio"/><TH ch="Total"/><TH ch="% Empleado"/><TH ch="% Negocio"/><TH ch=""/></tr></thead>
+                          <thead><tr><TH ch="Fecha"/><TH ch="Empleado"/><TH ch="Servicio"/><TH ch="Total"/><TH ch="% Empleado"/><TH ch="% Negocio"/><TH ch=""/></tr></thead>
                           <tbody>
                             {fil.map((p,i)=>(
                               <tr key={i} style={{borderBottom:`1px solid ${C.bo}`}}>
                                 <TD style={{fontSize:12,color:C.mu,whiteSpace:'nowrap'}} ch={p.fecha}/>
                                 <TD style={{fontWeight:700,color:C.bl}} ch={p.empleado}/>
-                                <TD style={{fontSize:11}} ch={p.tipo||'🔧 Taller'}/>
                                 <TD style={{fontSize:12}} ch={<span>{p.desc}{p.pagado&&<span style={{fontSize:10,color:C.gr,marginLeft:6}}>✓ pagado</span>}</span>}/>
                                 <TD style={{fontWeight:700}} ch={fm(p.valor)}/>
                                 <TD style={{color:C.gr,fontWeight:700}} ch={fm(p.emp60)+' ('+p.pct+'%)'}/>
