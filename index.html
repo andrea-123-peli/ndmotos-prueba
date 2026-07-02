@@ -2099,7 +2099,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   }).map(p=>({...p,emp60:p.empParte,neg40:p.negParte,desc:p.servicio,tipo:'🚿 Lavadero'}));
                   const fil=[...filT.map(p=>({...p,tipo:'🔧 Taller'})),...filL].sort((a,b)=>b.fecha.localeCompare(a.fecha));
                   const totVal=fil.reduce((a,b)=>a+b.valor,0);
-                  const tot60=fil.reduce((a,b)=>a+b.emp60,0);
+                  const filPend=fil.filter(p=>!p.pagado);
+                  const tot60=filPend.reduce((a,b)=>a+(b.emp60||0),0); // solo pendiente
                   const tot40=fil.reduce((a,b)=>a+b.neg40,0);
                   const porEmp={};
                   fil.forEach(p=>{if(!porEmp[p.empleado])porEmp[p.empleado]={val:0,emp60:0,neg40:0};porEmp[p.empleado].val+=p.valor;porEmp[p.empleado].emp60+=p.emp60;porEmp[p.empleado].neg40+=p.neg40;});
@@ -2409,9 +2410,13 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
           <div style={{background:'rgba(251,191,36,.1)',border:`1px solid ${C.ye}`,borderRadius:8,padding:12,marginBottom:16,fontSize:12,color:C.tx}}>
             ¿Cuánto dinero dejas en la caja para el próximo período? El resto se entiende que lo retiraste (utilidades, sueldo socios, etc.)
           </div>
-          <FG lbl="Monto que dejas en caja ($)" ch={
+          <FG lbl="Monto que dejas en caja ($) — escribe 0 si no dejas nada" ch={
             <Inp v={cierreMonto} s={setCierreMonto} type="number" ph="0" style={{borderColor:C.ye,fontSize:18,textAlign:'center'}}/>
           }/>
+          <div style={{display:'flex',gap:8,marginBottom:8}}>
+            <Btn sm col="ghost" onClick={()=>setCierreMonto('0')} ch="Dejar $0"/>
+            <Btn sm col="ghost" onClick={()=>setCierreMonto(String(cajaCalc))} ch={'Dejar todo: '+fm(cajaCalc)}/>
+          </div>
           {cierreMonto!==''&&(
             <div style={{background:C.su,borderRadius:8,padding:12,marginBottom:12,fontSize:12}}>
               <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
@@ -2458,10 +2463,14 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
             <Btn onClick={()=>{
               const monto=parseFloat(adelMonto);
               if(!monto) return toast2('Ingresa el monto','err');
-              sAdelantos([...rAdelantos.current,{id:uid(),nom:adelModal.nom,tipo:adelModal.tipo,
-                fecha:adelFecha||hoy(),desc:adelDesc||'Adelanto',monto,pagado:false}]);
+              const nuevoAdel={id:uid(),nom:adelModal.nom,tipo:adelModal.tipo,
+                fecha:adelFecha||hoy(),desc:adelDesc||'Adelanto',monto,pagado:false};
+              sAdelantos([...rAdelantos.current,nuevoAdel]);
+              sGas([...rGas.current,{id:nuevoAdel.id+'g',fecha:new Date().toISOString(),
+                tipo:'Adelanto Empleado',desc:'Adelanto a '+adelModal.nom+': '+(adelDesc||'sin descripcion'),
+                monto,pago:'Efectivo'}]);
               setAdelModal(null);
-              toast2('Adelanto de '+fm(monto)+' registrado para '+adelModal.nom,'ok');
+              toast2('Adelanto de '+fm(monto)+' registrado y descontado de caja','ok');
             }} col={C.ye} style={{flex:1,justifyContent:'center'}} ch="💰 Registrar Adelanto"/>
             <Btn onClick={()=>setAdelModal(null)} col="ghost" ch="Cancelar"/>
           </div>
