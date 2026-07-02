@@ -797,7 +797,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
               const lavPendD=lavProd.filter(p=>!p.pagado&&(!fechaCorte||p.fecha>fechaCorte)).reduce((a,b)=>a+b.empParte,0);
               const adelTotalPend=adelantos.filter(a=>!a.pagado&&(!fechaCorte||a.fecha>fechaCorte)).reduce((a,b)=>a+b.monto,0);
               const sPorPagarEmps=Math.max(0,empPendD+lavPendD-adelTotalPend);
-              const totalSalidas=sCompras+sAbonos+sNomina+sOtros+adelD+sPorPagarEmps;
+              const totalSalidas=sCompras+sAbonos+sNomina+sOtros+adelD;
+              // sPorPagarEmps NO se descuenta de caja - solo cuando se pague (va a sNomina)
               const caja2=saldoIni+totalEntradas-totalSalidas;
 
               return (
@@ -847,7 +848,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
 
                   <div style={{fontSize:10,color:C.re,fontWeight:700,textTransform:'uppercase',marginBottom:6}}>📤 Salidas — {fm(totalSalidas)}</div>
                   <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,marginBottom:12}}>
-                    {[{lbl:'Compras',val:sCompras,col:C.re},{lbl:'Otros gastos',val:sOtros,col:C.re},{lbl:'Abonos prov.',val:sAbonos,col:C.re},{lbl:'Nómina pagada',val:sNomina,col:C.or},{lbl:'Adelantos dados',val:adelD,col:C.or},{lbl:'Por pagar emps',val:sPorPagarEmps,col:C.or}].map((it,i)=>(
+                    {[{lbl:'Compras',val:sCompras,col:C.re},{lbl:'Otros gastos',val:sOtros,col:C.re},{lbl:'Abonos prov.',val:sAbonos,col:C.re},{lbl:'Nómina pagada',val:sNomina,col:C.or},{lbl:'Adelantos dados',val:adelD,col:C.or}].map((it,i)=>(
                       <div key={i} style={{background:'rgba(239,68,68,.08)',borderRadius:8,padding:'8px 10px',textAlign:'center'}}>
                         <div style={{fontSize:9,color:C.mu,textTransform:'uppercase',marginBottom:2}}>{it.lbl}</div>
                         <div style={{fontSize:13,fontWeight:800,color:it.col}}>{fm(it.val)}</div>
@@ -912,6 +913,9 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
               <KPI lbl="📦 Inventario" val={inv.length} col={C.bl}
                 sub={'Bodega: '+fm(vinv)+' · Para venta: '+fm(inv.reduce((a,p)=>a+p.pv*p.stock,0))}
                 onClick={()=>setTab('inventario')}/>
+              <KPI lbl="👷 Por pagar empleados" col={C.or}
+                val={fm(Math.max(0,empProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.emp60,0)+lavProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.empParte,0)-adelantos.filter(a=>!a.pagado).reduce((a,b)=>a+b.monto,0)))}
+                sub="Taller + Lavadero - Adelantos"/>
               <KPI lbl="📋 Fiados"  val={fm(fTot)}  col={C.pu} sub={fPend.length+' pendientes'} onClick={()=>{setTab('clientes');setClientesSub('fiados');}}/>
               <KPI lbl="🛒 Hoy"     val={fm(tHoy)}  col={C.or} sub={vHoy.length+' ventas'} onClick={()=>setTab('venta')}/>
             </div>
