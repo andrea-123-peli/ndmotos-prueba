@@ -846,16 +846,9 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                     })()}
                   
 
-                  <div style={{fontSize:10,color:C.re,fontWeight:700,textTransform:'uppercase',marginBottom:6}}>📤 Salidas — {fm(totalSalidas)}</div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}}>
-                    <div style={{background:'rgba(239,68,68,.08)',borderRadius:8,padding:'8px 10px',textAlign:'center'}}>
-                      <div style={{fontSize:9,color:C.mu,textTransform:'uppercase',marginBottom:2}}>Gastos</div>
-                      <div style={{fontSize:13,fontWeight:800,color:C.re}}>{fm(sCompras+sOtros+sAbonos)}</div>
-                    </div>
-                    <div style={{background:'rgba(239,68,68,.08)',borderRadius:8,padding:'8px 10px',textAlign:'center'}}>
-                      <div style={{fontSize:9,color:C.mu,textTransform:'uppercase',marginBottom:2}}>Nómina pagada</div>
-                      <div style={{fontSize:13,fontWeight:800,color:C.or}}>{fm(sNomina)}</div>
-                    </div>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(239,68,68,.08)',borderRadius:8,padding:'10px 14px',marginBottom:8}}>
+                    <span style={{fontSize:11,color:C.mu,textTransform:'uppercase',fontWeight:700}}>📤 Total Gastos</span>
+                    <span style={{fontSize:16,fontWeight:800,color:C.re}}>{fm(totalSalidas)}</span>
                   </div>
                   {/* Por pagar empleados dentro de caja */}
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(251,191,36,.08)',borderRadius:8,padding:'8px 12px',marginBottom:12}}>
