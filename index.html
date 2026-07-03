@@ -276,7 +276,7 @@ function App() {
       try{
         let rawData = null;
         try {
-      const resp=await fetch('https://hdbnuzyzoiwihxrohhbn.supabase.co/rest/v1/ndmotos_data?id=eq.sede3&select=data',{headers:{'apikey':'sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Authorization':'Bearer sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc'}}); const rows=await resp.json(); if(rows&&rows.length>0&&rows[0].data&&Object.keys(rows[0].data).length>0){rawData=JSON.stringify(rows[0].data);}
+      const resp=await fetch('https://hdbnuzyzoiwihxrohhbn.supabase.co/rest/v1/ndmotos_data?id=eq.sede2&select=data',{headers:{'apikey':'sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Authorization':'Bearer sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc'}}); const rows=await resp.json(); if(rows&&rows.length>0&&rows[0].data&&Object.keys(rows[0].data).length>0){rawData=JSON.stringify(rows[0].data);}
         } catch(e){}
         if(!rawData) {
           try { rawData = localStorage.getItem('ndm_all_local'); } catch(e){}
@@ -574,9 +574,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
       newInv=[...inv,{id:refU,cat:cCat,nom:cNom,pc,pv,stock:cant}]; nomP=cNom;
     } else {
       if(!cSel) return toast2('Selecciona el producto','err');
-      newInv=inv.map(p=>p.id===cSel.id?{...p,stock:p.stock+cant,pc:pc>0?pc:p.pc,pv:pv>0?pv:p.pv}:p); nomP=cSel.nom;
+      nomP=cSel.nom;
     }
-    sInv(newInv);
     sCom([...rCom.current,{id:uid(),fecha:new Date().toISOString(),proveedor:cProv||'Proveedor',desc:cant+'x '+nomP,cant,pc,total:pc*cant,pago:cPago}]);
     sGas([...rGas.current,{id:uid(),fecha:new Date().toISOString(),tipo:'Compra Mercancia',desc:cant+'x '+nomP,monto:pc*cant,pago:cPago}]);
     setCB('');setCS(null);setCCnt('1');setCPc('');setCPv('');setCPrv('');setCN(false);
@@ -1230,7 +1229,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                       <FG lbl="Categoria"           ch={<CatSel v={crCat} s={setCrCat}/>}/>
                       <FG lbl="Cantidad"            ch={<Inp v={crCant} s={setCrCant} type="number" ph="1"/>}/>
                       <FG lbl="Precio de Compra ($)" ch={<Inp v={crPc} s={setCrPc} type="number" ph="0"/>}/>
-                      <FG lbl="Precio de Venta ($)"  ch={<Inp v={crPv} s={setCrPv} type="number" ph="0" style={{borderColor:C.or}}/>}/>
+                      }/>
                       <Btn onClick={()=>{
                         if(!crRef.trim()||!crNom.trim()) return toast2('Completa referencia y nombre','err');
                         const refU=crRef.toUpperCase().trim();
@@ -1275,9 +1274,6 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                             if(!crProv.trim()) return toast2('Escribe el proveedor','err');
                             if(!crItems.length) return toast2('Agrega al menos un producto','err');
                             const total=parseFloat(crTotal)||crItems.reduce((a,b)=>a+b.pc*b.cant,0);
-                            const newInv=[...rInv.current];
-                            crItems.forEach(it=>newInv.push({id:it.ref,cat:it.cat,nom:it.nom,pc:it.pc,pv:it.pv,stock:it.cant}));
-                            sInv(newInv);
                             const nom=crItems.length===1?crItems[0].nom:crItems.length+' productos';
                             const totalFact=parseFloat(crTotal)||crItems.reduce((a,b)=>a+b.pc*b.cant,0);
                             sCreds([...rCreds.current,{id:uid(),fecha:crFecha||hoy(),proveedor:crProv.trim(),
@@ -1330,6 +1326,17 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                                   <span style={{color:C.gr}}>Pagado: {fm(cr.pagado)} ({pct}%)</span>
                                   <span style={{color:C.re}}>Falta: {fm(falta)}</span>
                                 </div>
+                                {cr.items&&cr.items.length>0&&(
+                                  <div style={{marginBottom:8,background:C.su,borderRadius:8,padding:'6px 10px'}}>
+                                    <div style={{fontSize:10,color:C.mu,textTransform:'uppercase',marginBottom:4}}>Productos en esta factura:</div>
+                                    {cr.items.map((it,i)=>(
+                                      <div key={i} style={{fontSize:11,color:C.tx,padding:'2px 0',display:'flex',justifyContent:'space-between'}}>
+                                        <span>• {it.nom}</span>
+                                        <span style={{color:C.mu}}>{fm(it.total||it.pc*it.cant)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                                 <div style={{display:'flex',gap:8,alignItems:'center'}}>
                                   <Inp v={crPagoId===cr.id?crPagoMonto:''} s={v=>{setCrPagoId(cr.id);setCrPagoMonto(v);}}
                                     type="number" ph="Monto del abono..." style={{flex:1}}/>
