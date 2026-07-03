@@ -847,13 +847,20 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   
 
                   <div style={{fontSize:10,color:C.re,fontWeight:700,textTransform:'uppercase',marginBottom:6}}>📤 Salidas — {fm(totalSalidas)}</div>
-                  <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6,marginBottom:12}}>
-                    {[{lbl:'Compras',val:sCompras,col:C.re},{lbl:'Gastos (incl. adelantos)',val:sOtros,col:C.re},{lbl:'Abonos prov.',val:sAbonos,col:C.re},{lbl:'Nómina pagada',val:sNomina,col:C.or}].map((it,i)=>(
-                      <div key={i} style={{background:'rgba(239,68,68,.08)',borderRadius:8,padding:'8px 10px',textAlign:'center'}}>
-                        <div style={{fontSize:9,color:C.mu,textTransform:'uppercase',marginBottom:2}}>{it.lbl}</div>
-                        <div style={{fontSize:13,fontWeight:800,color:it.col}}>{fm(it.val)}</div>
-                      </div>
-                    ))}
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}}>
+                    <div style={{background:'rgba(239,68,68,.08)',borderRadius:8,padding:'8px 10px',textAlign:'center'}}>
+                      <div style={{fontSize:9,color:C.mu,textTransform:'uppercase',marginBottom:2}}>Gastos</div>
+                      <div style={{fontSize:13,fontWeight:800,color:C.re}}>{fm(sCompras+sOtros+sAbonos)}</div>
+                    </div>
+                    <div style={{background:'rgba(239,68,68,.08)',borderRadius:8,padding:'8px 10px',textAlign:'center'}}>
+                      <div style={{fontSize:9,color:C.mu,textTransform:'uppercase',marginBottom:2}}>Nómina pagada</div>
+                      <div style={{fontSize:13,fontWeight:800,color:C.or}}>{fm(sNomina)}</div>
+                    </div>
+                  </div>
+                  {/* Por pagar empleados dentro de caja */}
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(251,191,36,.08)',borderRadius:8,padding:'8px 12px',marginBottom:12}}>
+                    <span style={{fontSize:11,color:C.mu}}>👷 Por pagar a empleados</span>
+                    <span style={{fontSize:14,fontWeight:800,color:C.or}}>{fm(Math.max(0,empProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.emp60,0)+lavProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.empParte,0)-adelantos.filter(a=>!a.pagado).reduce((a,b)=>a+b.monto,0)))}</span>
                   </div>
 
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(251,191,36,.15)',borderRadius:10,padding:'12px 16px',border:`2px solid ${C.ye}`,marginBottom:10}}>
@@ -915,13 +922,6 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                 onClick={()=>setTab('inventario')}/>
               <KPI lbl="📋 Fiados"  val={fm(fTot)}  col={C.pu} sub={fPend.length+' pendientes'} onClick={()=>{setTab('clientes');setClientesSub('fiados');}}/>
               <KPI lbl="🛒 Hoy"     val={fm(tHoy)}  col={C.or} sub={vHoy.length+' ventas'} onClick={()=>setTab('venta')}/>
-            </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
-              <KPI lbl="👷 Por pagar empleados" col={C.or}
-                val={fm(Math.max(0,empProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.emp60,0)+lavProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.empParte,0)-adelantos.filter(a=>!a.pagado).reduce((a,b)=>a+b.monto,0)))}
-                sub="Taller + Lavadero - Adelantos"/>
-              <KPI lbl="💵 En Caja" col={C.ye}
-                val={'Ver abajo'} sub="Ver detalle de caja"/>
             </div>
             {totDeuda>0&&(
               <KPI lbl="🏦 Deuda Proveedores" val={fm(totDeuda)} col={C.re}
