@@ -1363,7 +1363,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                                     ))}
                                     <div style={{fontSize:11,color:C.mu}}>También puedes ingresar manualmente:</div>
                                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:6}}>
-                                      <FG lbl="Descripción" ch={<Inp v={cNom||''} s={v=>setCNom&&setCNom(v)} ph="Producto..."/>}/>
+                                      <FG lbl="Descripción" ch={<Inp v={cNom||''} s={setCNom} ph="Producto..."/>}/>
                                       <FG lbl="Valor ($)" ch={<Inp v={cPc} s={setCPc} type="number" ph="0"/>}/>
                                     </div>
                                     <Btn onClick={()=>{
