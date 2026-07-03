@@ -847,7 +847,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                   
 
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(239,68,68,.08)',borderRadius:8,padding:'10px 14px',marginBottom:8}}>
-                    <span style={{fontSize:11,color:C.mu,textTransform:'uppercase',fontWeight:700}}>📤 Total Gastos</span>
+                    <span style={{fontSize:11,color:C.mu,textTransform:'uppercase',fontWeight:700}}>📤 Gastos del período</span>
                     <span style={{fontSize:16,fontWeight:800,color:C.re}}>{fm(totalSalidas)}</span>
                   </div>
                   {/* Por pagar empleados dentro de caja */}
@@ -2317,6 +2317,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                               </div>
                               <Btn sm col={C.gr} onClick={()=>{
                                 sEmp([...rEmp.current,{id:uid(),fecha:hoy(),nombre:e2.nom,cargo:'Lavadero',periodo:sem.ini+' al '+sem.fin,monto:pagoRealL,pago:'Efectivo'}]);
+                                sGas([...rGas.current,{id:uid(),fecha:new Date().toISOString(),tipo:'Nomina',desc:'Pago '+e2.nom+' - Lavadero '+sem.ini+' al '+sem.fin,monto:pagoRealL,pago:'Efectivo'}]);
                                 sLavProd(lavProd.map(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin?{...p,pagado:true}:p));
                                 sAdelantos(rAdelantos.current.map(a=>a.nom===e2.nom&&!a.pagado?{...a,pagado:true}:a));
                                 toast2('Pago de '+fm(pagoRealL)+' a '+e2.nom+' registrado','ok');
@@ -2358,7 +2359,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                     return true;
                   }).slice().reverse();
                   const totVal=fil.reduce((a,b)=>a+b.valor,0);
-                  const totEmp=fil.reduce((a,b)=>a+b.empParte,0);
+                  const filPendLav=fil.filter(p=>!p.pagado);
+                  const totEmp=filPendLav.reduce((a,b)=>a+b.empParte,0); // solo pendiente
                   const totNeg=fil.reduce((a,b)=>a+b.negParte,0);
                   return (
                     <div>
