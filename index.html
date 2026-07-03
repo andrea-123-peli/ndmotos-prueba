@@ -546,8 +546,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   };
 
   // ── FORMULARIO COMPRA ──
-  const [cBus,setCB]=useState('');
-  const [cNom,setCNom]=useState(''); const [cSel,setCS]=useState(null);
+  const [cBus,setCB]=useState(''); const [cSel,setCS]=useState(null);
   const [cNuevo,setCN]=useState(false); const [cRef,setCR]=useState('');
   const [cNom,setCNm]=useState(''); const [cCat,setCC]=useState('Aceites');
   const [cCnt,setCCnt]=useState('1'); const [cPc,setCPc]=useState('');
@@ -562,6 +561,8 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
   const [crFecha,setCrFecha]=useState('');
   const [crPagoId,setCrPagoId]=useState(''); const [crPagoMonto,setCrPagoMonto]=useState('');
   const [editCredId,setEditCredId]=useState(null);
+  const [crAddNom,setCrAddNom]=useState('');
+  const [crAddVal,setCrAddVal]=useState('');
 
   const regCompra = () => {
     const cant=parseInt(cCnt)||1, pc=parseFloat(cPc)||0, pv=parseFloat(cPv)||0;
@@ -579,7 +580,7 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
     sCom([...rCom.current,{id:uid(),fecha:new Date().toISOString(),proveedor:cProv||'Proveedor',desc:cant+'x '+nomP,cant,pc,total:pc*cant,pago:cPago}]);
     sGas([...rGas.current,{id:uid(),fecha:new Date().toISOString(),tipo:'Compra Mercancia',desc:cant+'x '+nomP,monto:pc*cant,pago:cPago}]);
     setCB('');setCS(null);setCCnt('1');setCPc('');setCPv('');setCPrv('');setCN(false);
-    toast2('Compra registrada. Inventario actualizado','ok');
+    toast2('Compra registrada','ok');
   };
 
   // ── FORMULARIO GASTOS ──
@@ -1340,41 +1341,22 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
                                     setCrPagoMonto('');setCrPagoId('');
                                     toast2('Abono de '+fm(abono)+' registrado','ok');
                                   }} ch="💰 Abonar"/>
-                                  <Btn sm col={C.bl} onClick={()=>setEditCredId(editCredId===cr.id?null:cr.id)} ch={editCredId===cr.id?"✕ Cerrar":"✏️ Agregar productos"}/>
+                                  <Btn sm col={C.bl} onClick={()=>setEditCredId(editCredId===cr.id?null:cr.id)} ch={editCredId===cr.id?'✕ Cerrar':'✏️ Agregar'}/>
                                 </div>
                                 {editCredId===cr.id&&(
-                                  <div style={{marginTop:10,background:C.su,borderRadius:8,padding:12}}>
-                                    <div style={{fontSize:11,color:C.mu,marginBottom:8}}>Agregar productos a esta factura:</div>
-                                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
-                                      <FG lbl="Buscar producto" ch={<Inp v={cBus} s={setCB} ph="Nombre o ref..."/>}/>
-                                      <FG lbl="Cantidad" ch={<Inp v={cCnt} s={setCCnt} type="number" ph="1"/>}/>
-                                    </div>
-                                    {cBus&&inv.filter(p=>p.nom.toLowerCase().includes(cBus.toLowerCase())||p.id.toLowerCase().includes(cBus.toLowerCase())).slice(0,4).map(p=>(
-                                      <div key={p.id} onClick={()=>{
-                                        const cant=parseInt(cCnt)||1;
-                                        const nuevoItem={id:p.id,nom:p.nom,cant,pc:p.pc,total:p.pc*cant};
-                                        const nuevaDeuda=cr.totalDeuda+p.pc*cant;
-                                        sCreds(creds.map(x=>x.id===cr.id?{...x,totalDeuda:nuevaDeuda,items:[...(x.items||[]),nuevoItem]}:x));
-                                        setCB('');setCCnt('1');
-                                        toast2('Producto agregado a la factura','ok');
-                                      }} style={{background:C.ca,borderRadius:6,padding:'6px 10px',marginBottom:4,cursor:'pointer',fontSize:12}}>
-                                        {p.nom} — {fm(p.pc)} x {cCnt||1} = {fm(p.pc*(parseInt(cCnt)||1))}
-                                      </div>
-                                    ))}
-                                    <div style={{fontSize:11,color:C.mu}}>También puedes ingresar manualmente:</div>
-                                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:6}}>
-                                      <FG lbl="Descripción" ch={<Inp v={cNom||''} s={setCNom} ph="Producto..."/>}/>
-                                      <FG lbl="Valor ($)" ch={<Inp v={cPc} s={setCPc} type="number" ph="0"/>}/>
-                                    </div>
+                                  <div style={{background:C.su,borderRadius:8,padding:10,marginTop:8}}>
+                                    <FG lbl="Descripcion del producto" ch={<Inp v={crAddNom} s={setCrAddNom} ph="Ej: Aceite, Llanta..."/>}/>
+                                    <FG lbl="Valor ($)" ch={<Inp v={crAddVal} s={setCrAddVal} type="number" ph="0"/>}/>
                                     <Btn onClick={()=>{
-                                      const val=parseFloat(cPc)||0;
-                                      if(!val) return toast2('Ingresa el valor','err');
-                                      const desc=cNom||'Producto';
-                                      const nuevaDeuda=cr.totalDeuda+val;
-                                      sCreds(creds.map(x=>x.id===cr.id?{...x,totalDeuda:nuevaDeuda,items:[...(x.items||[]),{id:uid(),nom:desc,cant:1,pc:val,total:val}]}:x));
-                                      setCPc('');
-                                      toast2('Producto agregado a la factura','ok');
-                                    }} col={C.gr} full ch="+ Agregar a factura" style={{marginTop:8}}/>
+                                      const val=parseFloat(crAddVal)||0;
+                                      if(!crAddNom.trim()||!val) return toast2('Completa los campos','err');
+                                      sCreds(creds.map(x=>x.id===cr.id?{...x,
+                                        totalDeuda:x.totalDeuda+val,
+                                        items:[...(x.items||[]),{id:uid(),nom:crAddNom.trim(),cant:1,pc:val,total:val}]
+                                      }:x));
+                                      setCrAddNom('');setCrAddVal('');
+                                      toast2('Producto agregado. Deuda actualizada','ok');
+                                    }} col={C.gr} full ch="+ Agregar a factura"/>
                                   </div>
                                 )}
                                 {cr.pagos&&cr.pagos.length>0&&(
