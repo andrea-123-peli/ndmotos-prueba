@@ -913,11 +913,15 @@ const guardar = async patch => { const data = {inv:rInv.current,ven:rVen.current
               <KPI lbl="📦 Inventario" val={inv.length} col={C.bl}
                 sub={'Bodega: '+fm(vinv)+' · Para venta: '+fm(inv.reduce((a,p)=>a+p.pv*p.stock,0))}
                 onClick={()=>setTab('inventario')}/>
+              <KPI lbl="📋 Fiados"  val={fm(fTot)}  col={C.pu} sub={fPend.length+' pendientes'} onClick={()=>{setTab('clientes');setClientesSub('fiados');}}/>
+              <KPI lbl="🛒 Hoy"     val={fm(tHoy)}  col={C.or} sub={vHoy.length+' ventas'} onClick={()=>setTab('venta')}/>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
               <KPI lbl="👷 Por pagar empleados" col={C.or}
                 val={fm(Math.max(0,empProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.emp60,0)+lavProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.empParte,0)-adelantos.filter(a=>!a.pagado).reduce((a,b)=>a+b.monto,0)))}
                 sub="Taller + Lavadero - Adelantos"/>
-              <KPI lbl="📋 Fiados"  val={fm(fTot)}  col={C.pu} sub={fPend.length+' pendientes'} onClick={()=>{setTab('clientes');setClientesSub('fiados');}}/>
-              <KPI lbl="🛒 Hoy"     val={fm(tHoy)}  col={C.or} sub={vHoy.length+' ventas'} onClick={()=>setTab('venta')}/>
+              <KPI lbl="💵 En Caja" col={C.ye}
+                val={'Ver abajo'} sub="Ver detalle de caja"/>
             </div>
             {totDeuda>0&&(
               <KPI lbl="🏦 Deuda Proveedores" val={fm(totDeuda)} col={C.re}
