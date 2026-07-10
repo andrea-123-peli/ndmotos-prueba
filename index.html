@@ -565,6 +565,7 @@ let _guardarTimer=null;
   const [crFecha,setCrFecha]=useState('');
   const [crPagoId,setCrPagoId]=useState(''); const [crPagoMonto,setCrPagoMonto]=useState('');
   const [editCredId,setEditCredId]=useState(null);
+  const [addingProd,setAddingProd]=useState(false);
   const [crAddNom,setCrAddNom]=useState('');
   const [crAddVal,setCrAddVal]=useState('');
 
@@ -621,11 +622,14 @@ let _guardarTimer=null;
   const [hwFecha,setHwFecha]=useState(''); const [hwBus,setHwBus]=useState('');
 
   const addProd = () => {
+    if(addingProd) return;
     if(!iRef) return toast2('Escribe la referencia','err');
     if(!iNom) return toast2('Escribe el nombre','err');
     // Referencias duplicadas permitidas
-    sInv([...inv,{id:iRef.toUpperCase(),cat:iCat,nom:iNom,pc:parseFloat(iPc)||0,pv:parseFloat(iPv)||0,stock:parseInt(iStk)||0}]);
+    sInv([...rInv.current,{id:iRef.toUpperCase(),_uid:uid(),cat:iCat,nom:iNom,pc:parseFloat(iPc)||0,pv:parseFloat(iPv)||0,stock:parseInt(iStk)||0}]);
     setIR('');setIN('');setIP('');setIPv('');setIS('');toast2('Producto agregado','ok');
+    setAddingProd(true);
+    setTimeout(()=>setAddingProd(false),1000);
   };
 
   // ── FORMULARIO CLIENTES ──
@@ -1542,7 +1546,7 @@ let _guardarTimer=null;
                         </div>
                       ))}
                       <div style={{flex:1,minWidth:100}}><FG lbl="Categoria" ch={<CatSel v={iCat} s={setIC}/>}/></div>
-                      <Btn onClick={addProd} col={C.or} ch="+ Agregar"/>
+                      <Btn onClick={addProd} col={addingProd?"ghost":C.or} ch="+ Agregar"/>
                     </div>
                   </div>
                 }/>
@@ -1586,7 +1590,7 @@ let _guardarTimer=null;
                             <TD style={{fontSize:20,fontWeight:800,color:ag?C.re:bj?C.ye:C.gr}} ch={p.stock}/>
                             <TD ch={<Chip col={ag?C.re:bj?C.ye:C.gr} ch={ag?'AGOTADO':bj?'BAJO':'OK'}/>}/>
                             <TD ch={<Btn sm col={C.bl} onClick={()=>setEP({...p,orig:p.id})} ch="✏️"/>}/>
-                            <TD ch={<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sInv(inv.filter(x=>x.id!==p.id));toast2('Producto eliminado','info');}} ch="🗑"/>}/>
+                            <TD ch={<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sInv(rInv.current.filter(x=>(p._uid?x._uid!==p._uid:x.id!==p.id)||(!p._uid&&x._uid)));toast2('Producto eliminado','info');}} ch="🗑"/>}/>
                           </tr>
                         );
                       })}
