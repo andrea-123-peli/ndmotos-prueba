@@ -1945,7 +1945,10 @@ let _guardarTimer=null;
                           <TD style={{color:x.t==='ven'?C.gr:C.re,fontWeight:700}} ch={fm(x.t==='ven'?x.r.total:x.r.monto)}/>
                           <TD style={{color:C.gr,fontWeight:700}} ch={x.r.ganancia>0?fm(x.r.ganancia):'-'}/>
                           <TD ch={x.t==='ven'
-                            ? <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;borrarVenta(x.r.id);}} ch="🗑"/>
+                            ? <div style={{display:'flex',gap:4}}>
+                                <Btn sm col={C.pu} onClick={()=>setTk(x.r)} ch="📄"/>
+                                <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;borrarVenta(x.r.id);}} ch="🗑"/>
+                              </div>
                             : <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro?'))return;sGas(gas.filter(g=>g.id!==x.r.id));}} ch="🗑"/>}/>
                         </tr>
                       ))}
