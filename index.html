@@ -2306,7 +2306,7 @@ let _guardarTimer=null;
                     sLavProd([...rLavProd.current,prod]);
                     sVen([...rVen.current,{id:prod.id+'v',fecha:new Date(prod.fecha+'T12:00:00').toISOString(),
                       tipo:'lavado',cliente:'Lavadero',desc:'🚿 '+lvServ+' - '+lvEmp,
-                      total:val2,ganancia:prod.negParte,pago:'Efectivo',items:[]}]);
+                      total:val2,ganancia:val2,pago:'Efectivo',items:[]}]);
                     setLvVal('');setLvServ('Lavado');
                     toast2('Servicio de '+fm(val2)+' registrado','ok');
                   }} col={C.gr} full ch="✅ Registrar Lavado"/>
