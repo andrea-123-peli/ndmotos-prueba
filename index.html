@@ -2001,7 +2001,7 @@ let _guardarTimer=null;
                     sEmpProd([...rEmpProd.current,prod]);
                     sVen([...rVen.current,{id:prod.id+'e',fecha:new Date(prod.fecha+'T12:00:00').toISOString(),
                       tipo:'empleado',cliente:'Taller',desc:'🔧 '+epDesc+' - '+epEmp,
-                      total:val2,ganancia:prod.neg40,pago:'Efectivo',items:[]}]);
+                      total:val2,ganancia:val2,pago:'Efectivo',items:[]}]);
                     setEpVal('');setEpDesc('');
                     toast2('Produccion de '+fm(val2)+' registrada para '+epEmp,'ok');
                   }} col={C.gr} full ch="✅ Registrar Produccion"/>
