@@ -159,10 +159,11 @@ const SubNav = ({opts,val,set}) => (
 
 const BuscarProd = ({val,setVal,onSel,inv}) => {
   const [open,setOpen] = useState(false);
+  const norm = s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const res = open&&val ? inv.filter(p=>
-    p.nom.toLowerCase().includes(val.toLowerCase()) ||
-    p.id.toLowerCase().includes(val.toLowerCase()) ||
-    p.cat.toLowerCase().includes(val.toLowerCase())
+    norm(p.nom).includes(norm(val)) ||
+    norm(p.id).includes(norm(val)) ||
+    norm(p.cat).includes(norm(val())
   ).slice(0,7) : [];
   return (
     <div style={{position:'relative'}}>
@@ -859,7 +860,13 @@ let _guardarTimer=null;
                   {/* Por pagar empleados dentro de caja */}
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(251,191,36,.08)',borderRadius:8,padding:'8px 12px',marginBottom:12}}>
                     <span style={{fontSize:11,color:C.mu}}>👷 Por pagar a empleados</span>
-                    <span style={{fontSize:14,fontWeight:800,color:C.or}}>{fm(Math.max(0,empProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.emp60,0)+lavProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.empParte,0)-adelantos.filter(a=>!a.pagado).reduce((a,b)=>a+b.monto,0)))}</span>
+                    <span style={{fontSize:14,fontWeight:800,color:C.or}}>{fm(Math.max(0,empProd.filter(p=>p.pagado!==true).reduce((a,b)=>{
+                  const empObj=emps.find(e=>e.nom===b.empleado);
+                  return a+(b.emp60||Math.round(b.valor*((empObj?empObj.pct:b.pct||60)/100)));
+                },0)+lavProd.filter(p=>p.pagado!==true).reduce((a,b)=>{
+                  const lavObj=lavEmps.find(e=>e.nom===b.empleado);
+                  return a+(b.empParte||Math.round(b.valor*((lavObj?lavObj.pct:b.pct||60)/100)));
+                },0)))}</span>
                   </div>
 
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(251,191,36,.15)',borderRadius:10,padding:'12px 16px',border:`2px solid ${C.ye}`,marginBottom:10}}>
@@ -2052,7 +2059,7 @@ let _guardarTimer=null;
                         <div style={{fontWeight:800,fontSize:15}}>{e2.nom}</div>
                         <div style={{display:'flex',gap:6}}>
                           <Btn sm col={C.ye} onClick={()=>{setAdelModal({nom:e2.nom,tipo:'taller'});setAdelMonto('');setAdelDesc('');setAdelFecha(hoy());}} ch="💰 Adelanto Taller"/>
-                          <Btn sm col={C.re} onClick={()=>{sEmps(emps.filter(x=>x.nom!==e2.nom));sEmpProd(empProd.filter(p=>p.empleado!==e2.nom));toast2(e2.nom+' eliminado','info');}} ch="Eliminar"/>
+                          <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro que deseas eliminar a '+e2.nom+' y toda su producción?'))return;sEmps(emps.filter(x=>x.nom!==e2.nom));sEmpProd(rEmpProd.current.filter(p=>p.empleado!==e2.nom));toast2(e2.nom+' eliminado','info');}} ch="Eliminar"/>
                         </div>
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,background:C.su,borderRadius:8,padding:'8px 12px'}}>
@@ -2334,7 +2341,7 @@ let _guardarTimer=null;
                         <div style={{fontWeight:800,fontSize:14}}>🚿 {e2.nom}</div>
                         <div style={{display:'flex',gap:6}}>
                           <Btn sm col={C.ye} onClick={()=>{setAdelModal({nom:e2.nom,tipo:'lavadero'});setAdelMonto('');setAdelDesc('');setAdelFecha(hoy());}} ch="💰 Adelanto Lavadero"/>
-                          <Btn sm col={C.re} onClick={()=>{sLavEmps(lavEmps.filter(x=>x.nom!==e2.nom));sLavProd(lavProd.filter(p=>p.empleado!==e2.nom));toast2(e2.nom+' eliminado','info');}} ch="Eliminar"/>
+                          <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro que deseas eliminar a '+e2.nom+' y toda su producción?'))return;sLavEmps(lavEmps.filter(x=>x.nom!==e2.nom));sLavProd(rLavProd.current.filter(p=>p.empleado!==e2.nom));toast2(e2.nom+' eliminado','info');}} ch="Eliminar"/>
                         </div>
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,background:C.su,borderRadius:8,padding:'8px 12px'}}>
@@ -2598,7 +2605,15 @@ let _guardarTimer=null;
             <FG lbl="Stock"         ch={<Inp v={editP.stock}  s={v=>setEP({...editP,stock:parseInt(v)||0})}   type="number"/>}/>
           </div>
           <div style={{display:'flex',gap:10}}>
-            <Btn onClick={()=>{ sInv(rInv.current.map(p=>(editP._uidOrig?p._uid===editP._uidOrig:p.id===editP.orig)?{...editP,_uid:editP._uidOrig||editP._uid}:p)); setEP(null); toast2('Producto actualizado','ok'); }} col={C.gr} style={{flex:1,justifyContent:'center'}} ch="💾 Guardar"/>
+            <Btn onClick={()=>{ (()=>{
+                  // Encontrar indice exacto del producto a editar
+                  const invActual=[...rInv.current];
+                  const idxEdit=editP._uidOrig
+                    ? invActual.findIndex(p=>p._uid===editP._uidOrig)
+                    : invActual.findIndex(p=>p.id===editP.orig&&!p._uid);
+                  if(idxEdit>=0) invActual[idxEdit]={...editP,_uid:editP._uidOrig||editP._uid};
+                  sInv(invActual);
+                })(); setEP(null); toast2('Producto actualizado','ok'); }} col={C.gr} style={{flex:1,justifyContent:'center'}} ch="💾 Guardar"/>
             <Btn onClick={()=>setEP(null)} col="ghost" ch="Cancelar"/>
           </div>
         </div>
