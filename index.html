@@ -2007,7 +2007,7 @@ let _guardarTimer=null;
                       servicio:epDesc.trim(),desc:epDesc.trim(),pct,valor:val2,
                       emp60:Math.round(val2*(pct/100)),neg40:Math.round(val2*((100-pct)/100))};
                     sEmpProd([...rEmpProd.current,prod]);
-                    sVen([...rVen.current,{id:prod.id+'e',fecha:new Date(prod.fecha+'T12:00:00').toISOString(),
+                    sVen([...rVen.current,{id:prod.id+'e',fecha:new Date().toISOString(),
                       tipo:'empleado',cliente:'Taller',desc:'🔧 '+epDesc+' - '+epEmp,
                       total:val2,ganancia:val2,pago:'Efectivo',items:[]}]);
                     setEpVal('');setEpDesc('');
@@ -2311,7 +2311,7 @@ let _guardarTimer=null;
                     const prod={id:uid(),fecha:lvFecha||hoy(),empleado:lvEmp,servicio:lvServ.trim(),
                       valor:val2,empParte:Math.round(val2*(pctI/100)),negParte:Math.round(val2*((100-pctI)/100)),pct:pctI};
                     sLavProd([...rLavProd.current,prod]);
-                    sVen([...rVen.current,{id:prod.id+'v',fecha:new Date(prod.fecha+'T12:00:00').toISOString(),
+                    sVen([...rVen.current,{id:prod.id+'v',fecha:new Date().toISOString(),
                       tipo:'lavado',cliente:'Lavadero',desc:'🚿 '+lvServ+' - '+lvEmp,
                       total:val2,ganancia:val2,pago:'Efectivo',items:[]}]);
                     setLvVal('');setLvServ('Lavado');
