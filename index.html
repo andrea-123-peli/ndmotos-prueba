@@ -159,11 +159,11 @@ const SubNav = ({opts,val,set}) => (
 
 const BuscarProd = ({val,setVal,onSel,inv}) => {
   const [open,setOpen] = useState(false);
-  const res = open&&val ? inv.filter(p=>
-    p.nom.toLowerCase().includes(val.toLowerCase()) ||
-    p.id.toLowerCase().includes(val.toLowerCase()) ||
-    p.cat.toLowerCase().includes(val.toLowerCase())
-  ).slice(0,7) : [];
+  const res = open&&val ? inv.filter(p=>{
+    const nrm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+    const q=nrm(val);
+    return nrm(p.nom).includes(q)||nrm(p.id).includes(q)||nrm(p.cat).includes(q);
+  }).slice(0,12) : [];
   return (
     <div style={{position:'relative'}}>
       <Inp v={val} s={v=>{setVal(v);setOpen(true);if(!v){onSel(null);setOpen(false);}}} ph="Nombre o referencia..."/>
@@ -542,6 +542,11 @@ let _guardarTimer=null;
       venta.fiaId=fiaId;
     }
     setTk(venta);
+    // Si hay cliente seleccionado, agregar venta a su historial
+    if(vClObj){
+      const serv={id:venta.id,fecha:venta.fecha,desc,total,items:[...vItems],tipo:'venta'};
+      sCli(cli.map(c=>c.id===vClObj.id?{...c,servicios:[...( c.servicios||[]),serv]}:c));
+    }
     setVI([]);setVB('');setVS(null);setVC('1');setVPr('');setVCl('');setVClObj(null);setVTecnico('');setEditVenta(null);setVDNom('');setVDPc('');setVDPv('');
     toast2('Venta de '+fm(total)+' registrada','ok');
   };
@@ -550,6 +555,15 @@ let _guardarTimer=null;
     const v=ven.find(x=>x.id===id);
     const newInv=v&&v.items?inv.map(p=>{const it=v.items.find(x=>x.id===p.id);return it&&!it.sv?{...p,stock:p.stock+it.cant}:p;}):inv;
     sInv(newInv); sVen(ven.filter(x=>x.id!==id));
+    // Borrar produccion del empleado asociada a esta venta
+    if(v&&v.items){
+      v.items.forEach(it=>{
+        if(it.sv&&it.tecnico){
+          sEmpProd(rEmpProd.current.filter(x=>x.id!==it.id+'t'));
+          sLavProd(rLavProd.current.filter(x=>x.id!==it.id+'l'));
+        }
+      });
+    }
     toast2('Venta eliminada','info');
   };
 
@@ -640,7 +654,7 @@ let _guardarTimer=null;
   const [clNom,setClN]=useState(''); const [clTel,setClT]=useState('');
   const [clEmpresa,setClEmpresa]=useState(false); const [clNit,setClNit]=useState(''); const [clEmail,setClEmail]=useState('');
   const [clMoto,setClM]=useState(''); const [clPlaca,setClPl]=useState('');
-  const [clNotas,setClNo]=useState(''); const [clBus,setClB]=useState('');
+  const [clNotas,setClNo]=useState(''); const [clKm,setClKm]=useState(''); const [clBus,setClB]=useState('');
   const [clSel,setClS]=useState(null); const [clFe,setClFe]=useState(hoy());
   const [clST,setClST]=useState('Cambio de aceite'); const [clSD,setClSD]=useState('');
   const [clSCo,setClSCo]=useState('0'); const [clSCb,setClSCb]=useState('');
@@ -650,8 +664,8 @@ let _guardarTimer=null;
 
   const addCl = () => {
     if(!clNom) return toast2('Escribe el nombre','err');
-    sCli([...cli,{id:uid(),nom:clNom,tel:clTel,email:clEmail,moto:clMoto,placa:clPlaca,notas:clNotas,empresa:clEmpresa,nit:clNit,servicios:[]}]);
-    setClN('');setClT('');setClM('');setClPl('');setClNo('');setClEmail('');setClNit('');setClEmpresa(false);toast2('Cliente registrado','ok');
+    sCli([...cli,{id:uid(),nom:clNom,tel:clTel,email:clEmail,moto:clMoto,placa:clPlaca,notas:clNotas,km:clKm,empresa:clEmpresa,nit:clNit,servicios:[]}]);
+    setClN('');setClT('');setClM('');setClPl('');setClNo('');setClKm('');setClEmail('');setClNit('');setClEmpresa(false);toast2('Cliente registrado','ok');
   };
 
   const addServCl = () => {
@@ -1574,8 +1588,8 @@ let _guardarTimer=null;
                     <tbody>
                       {inv.filter(p=>{
                       if(!iBus) return true;
-                      const q=iBus.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-                      const nom=(p.nom||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+                      const q=iBus.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+                      const nom=(p.nom||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
                       const ref=(p.id||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
                       const cat=(p.cat||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
                       return nom.includes(q)||ref.includes(q)||cat.includes(q);
@@ -1690,6 +1704,7 @@ let _guardarTimer=null;
                         {[['Nombre',clNom,setClN,'Nombre completo...'],['Telefono',clTel,setClT,'Numero...'],
                           ['Email',clEmail,setClEmail,'correo@ejemplo.com'],
                           ['Moto',clMoto,setClM,'Ej: Honda CB 150...'],['Placa',clPlaca,setClPl,'Ej: ABC-123'],
+                          ['Kilometraje',clKm,setClKm,'Ej: 12500 km'],
                           ['Notas',clNotas,setClNo,'Observaciones...']].map(([lbl,val,fn,ph])=>(
                           <FG key={lbl} lbl={lbl} ch={<Inp v={val} s={fn} ph={ph}/>}/>
                         ))}
@@ -2633,7 +2648,7 @@ let _guardarTimer=null;
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14}}>
               <div>
                 <div style={{fontSize:18,fontWeight:800,color:C.or}}>{c.nom}</div>
-                <div style={{fontSize:12,color:C.mu}}>{[c.tel?'📞 '+c.tel:'',c.moto?'🏍 '+c.moto:'',c.placa?'🔖 '+c.placa:''].filter(Boolean).join(' · ')}</div>
+                <div style={{fontSize:12,color:C.mu}}>{[c.tel?'📞 '+c.tel:'',c.moto?'🏍 '+c.moto:'',c.placa?'🔖 '+c.placa:'',c.km?'📍 '+c.km+' km':''].filter(Boolean).join(' · ')}</div>
               </div>
               <div style={{display:'flex',gap:8}}>
                 <Btn sm col={C.bl} onClick={()=>{setVerCl(null);setECl({...c});}} ch="✏️ Editar"/>
