@@ -24,7 +24,7 @@ const fm  = v => '$' + Math.round(v||0).toLocaleString('es-CO');
 const hoy = () => new Date().toISOString().slice(0,10);
 const uid = () => 'x' + Date.now() + Math.floor(Math.random()*9999);
 const fDT = s => { try { const d=new Date(s); return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes()); } catch(e){ return ''; } };
-const fD  = s => { try { const d=new Date(s+'T12:00:00'); return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear(); } catch(e){ return s||''; } };
+const fD  = s => { try { const d=s&&s.includes('T')?new Date(s):new Date(s+'T12:00:00'); return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes()); } catch(e){ return s||''; } };
 const fT  = s => { try { const d=new Date(s); const hoy2=new Date(); const esHoy=d.getDate()===hoy2.getDate()&&d.getMonth()===hoy2.getMonth(); return (esHoy?'':pad(d.getDate())+'/'+pad(d.getMonth()+1)+' ')+pad(d.getHours())+':'+pad(d.getMinutes()); } catch(e){ return ''; } };
 const pad = n => String(n).padStart(2,'0');
 const semana = () => {
@@ -276,7 +276,7 @@ function App() {
       try{
         let rawData = null;
         try {
-      const resp=await fetch('https://hdbnuzyzoiwihxrohhbn.supabase.co/rest/v1/ndmotos_data?id=eq.sede3&select=data',{headers:{'apikey':'sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Authorization':'Bearer sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc'}}); const rows=await resp.json(); if(rows&&rows.length>0&&rows[0].data&&Object.keys(rows[0].data).length>0){rawData=JSON.stringify(rows[0].data);}
+      const resp=await fetch('https://hdbnuzyzoiwihxrohhbn.supabase.co/rest/v1/ndmotos_data?id=eq.sede1&select=data',{headers:{'apikey':'sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Authorization':'Bearer sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc'}}); const rows=await resp.json(); if(rows&&rows.length>0&&rows[0].data&&Object.keys(rows[0].data).length>0){rawData=JSON.stringify(rows[0].data);}
         } catch(e){}
         if(!rawData) {
           try { rawData = localStorage.getItem('ndm_all_local'); } catch(e){}
@@ -315,7 +315,7 @@ let _guardarTimer=null;
   const guardar = async patch => {
     clearTimeout(_guardarTimer);
     _guardarTimer=setTimeout(async()=>{
-    const data = {inv:rInv.current,ven:rVen.current,gas:rGas.current,com:rCom.current,fia:rFia.current,emp:rEmp.current,cli:rCli.current,meta:rMeta.current,herr:rHerr.current,emps:rEmps.current,empProd:rEmpProd.current,lavEmps:rLavEmps.current,lavProd:rLavProd.current,lavPct:rLavPct.current,creds:rCreds.current,negNit:rNegNit.current,adelantos:rAdelantos.current,cajaInicial:rCajaInicial.current,cajaCierres:rCajaCierres.current,...(patch||{})}; const json=JSON.stringify(data); try{localStorage.setItem('ndm_all_local',json);}catch(e){} try{await fetch('https://hdbnuzyzoiwihxrohhbn.supabase.co/rest/v1/ndmotos_data?id=eq.sede3',{method:'PATCH',headers:{'Content-Type':'application/json','apikey':'sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Authorization':'Bearer sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Prefer':'return=minimal'},body:JSON.stringify({data,updated_at:new Date().toISOString()})});}catch(e){} },300); };
+    const data = {inv:rInv.current,ven:rVen.current,gas:rGas.current,com:rCom.current,fia:rFia.current,emp:rEmp.current,cli:rCli.current,meta:rMeta.current,herr:rHerr.current,emps:rEmps.current,empProd:rEmpProd.current,lavEmps:rLavEmps.current,lavProd:rLavProd.current,lavPct:rLavPct.current,creds:rCreds.current,negNit:rNegNit.current,adelantos:rAdelantos.current,cajaInicial:rCajaInicial.current,cajaCierres:rCajaCierres.current,...(patch||{})}; const json=JSON.stringify(data); try{localStorage.setItem('ndm_all_local',json);}catch(e){} try{await fetch('https://hdbnuzyzoiwihxrohhbn.supabase.co/rest/v1/ndmotos_data?id=eq.sede1',{method:'PATCH',headers:{'Content-Type':'application/json','apikey':'sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Authorization':'Bearer sb_publishable_qoTLHMnh9nroJTUTBKeOZA_WgMCulnc','Prefer':'return=minimal'},body:JSON.stringify({data,updated_at:new Date().toISOString()})});}catch(e){} },300); };
   
   const sInv    = d => { rInv.current=d;    setInv(d);    guardar({inv:d});    };
   const sVen    = d => { rVen.current=d;    setVen(d);    guardar({ven:d});    };
@@ -544,7 +544,7 @@ let _guardarTimer=null;
     setTk(venta);
     // Si hay cliente seleccionado, agregar venta a su historial
     if(vClObj){
-      const serv={id:venta.id,fecha:venta.fecha,desc,total,items:[...vItems],tipo:'venta'};
+      const serv={id:venta.id,fecha:venta.fecha,desc,total,cobrado:total,rep:desc,items:[...vItems],tipo:'venta'};
       sCli(cli.map(c=>c.id===vClObj.id?{...c,servicios:[...( c.servicios||[]),serv]}:c));
     }
     setVI([]);setVB('');setVS(null);setVC('1');setVPr('');setVCl('');setVClObj(null);setVTecnico('');setEditVenta(null);setVDNom('');setVDPc('');setVDPv('');
@@ -2471,8 +2471,8 @@ let _guardarTimer=null;
                                 <TD style={{fontWeight:700}} ch={fm(p.valor)}/>
                                 <TD style={{color:C.gr,fontWeight:700}} ch={fm(p.empParte)+' ('+p.pct+'%)'}/>
                                 <TD style={{color:C.or,fontWeight:700}} ch={fm(p.negParte)+' ('+(100-p.pct)+'%)'}/>
-                                <TD ch={<Btn sm col={C.re} onClick={()=>{
-                                  sLavProd(lavProd.filter(x=>x.id!==p.id));
+                                <TD ch={<Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro que deseas eliminar este registro?'))return;
+                                  sLavProd(rLavProd.current.filter(x=>x.id!==p.id));
                                   sVen(ven.filter(v=>v.id!==p.id+'v'));
                                   toast2('Eliminado','info');
                                 }} ch="🗑"/>}/>
