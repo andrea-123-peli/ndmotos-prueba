@@ -1745,8 +1745,9 @@ let _guardarTimer=null;
                       <div style={{height:1,background:C.bo,margin:'12px 0'}}/>
                       <div style={{display:'flex',flexDirection:'column',gap:10}}>
                         {cli.filter(c=>{
-                          if(clFN&&!c.nom.toLowerCase().includes(clFN.toLowerCase())&&!(c.tel&&c.tel.includes(clFN))) return false;
-                          if(clFF&&!c.servicios.some(sv=>sv.fecha===clFF)) return false;
+                          const nrm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+                          if(clFN&&!nrm(c.nom).includes(nrm(clFN))&&!nrm(c.tel||'').includes(nrm(clFN))) return false;
+                          if(clFF&&!c.servicios.some(sv=>(sv.fecha||'').slice(0,10)===clFF)) return false;
                           return true;
                         }).map(c=>{
                           const tot=c.servicios.reduce((a,b)=>a+b.cobrado,0);
@@ -1851,7 +1852,7 @@ let _guardarTimer=null;
             .filter(x=>{ const d=x.r.fecha.slice(0,10); return !(hDe&&d<hDe) && !(hHa&&d>hHa); })
             .filter(x=>{
               if(hTipo==='lavadero') return x.t==='ven'&&x.r.tipo==='lavado';
-              if(hTipo==='repuestos') return x.t==='ven'&&x.r.tipo!=='lavado'&&x.r.tipo!=='empleado' || x.t==='gas';
+              if(hTipo==='repuestos') return x.t==='ven'&&x.r.tipo!=='lavado'&&x.r.tipo!=='empleado';
               if(hTipo==='empleados') return x.t==='ven'&&x.r.tipo==='empleado';
               return true; // todo
             })
@@ -2007,7 +2008,7 @@ let _guardarTimer=null;
                     sEmpProd([...rEmpProd.current,prod]);
                     sVen([...rVen.current,{id:prod.id+'e',fecha:new Date().toISOString(),
                       tipo:'empleado',cliente:'Taller',desc:'🔧 '+epDesc+' - '+epEmp,
-                      total:val2,ganancia:val2,pago:'Efectivo',items:[]}]);
+                      total:val2,ganancia:Math.round(val2*((100-pct)/100)),pago:'Efectivo',items:[]}]);
                     setEpVal('');setEpDesc('');
                     toast2('Produccion de '+fm(val2)+' registrada para '+epEmp,'ok');
                   }} col={C.gr} full ch="✅ Registrar Produccion"/>
@@ -2046,7 +2047,7 @@ let _guardarTimer=null;
                   const pe=empProd.filter(p=>p.empleado===e2.nom);
                   const tH=pe.filter(p=>p.fecha===h3).reduce((a,b)=>a+b.valor,0);
                   const peSemTodo=pe.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin);
-                  const peSem=pe.filter(p=>!p.pagado); // TODO lo pendiente sin filtro de fecha
+                  const peSem=pe.filter(p=>!p.pagado&&p.fecha>=sem.ini&&p.fecha<=sem.fin);
                   const tS=peSemTodo.reduce((a,b)=>a+b.valor,0); // total semana (pagado o no)
                   const tM=pe.filter(p=>p.fecha.slice(0,7)===mes).reduce((a,b)=>a+b.valor,0);
                   const tT=pe.reduce((a,b)=>a+b.valor,0);
@@ -2311,7 +2312,7 @@ let _guardarTimer=null;
                     sLavProd([...rLavProd.current,prod]);
                     sVen([...rVen.current,{id:prod.id+'v',fecha:new Date().toISOString(),
                       tipo:'lavado',cliente:'Lavadero',desc:'🚿 '+lvServ+' - '+lvEmp,
-                      total:val2,ganancia:val2,pago:'Efectivo',items:[]}]);
+                      total:val2,ganancia:Math.round(val2*((100-pctI)/100)),pago:'Efectivo',items:[]}]);
                     setLvVal('');setLvServ('Lavado');
                     toast2('Servicio de '+fm(val2)+' registrado','ok');
                   }} col={C.gr} full ch="✅ Registrar Lavado"/>
@@ -2327,7 +2328,7 @@ let _guardarTimer=null;
                   const pe=lavProd.filter(p=>p.empleado===e2.nom);
                   const tH=pe.filter(p=>p.fecha===h3).reduce((a,b)=>a+b.valor,0);
                   const peSemTodo=pe.filter(p=>p.fecha>=sem.ini&&p.fecha<=sem.fin);
-                  const peSem=pe.filter(p=>!p.pagado); // TODO lo pendiente sin filtro de fecha
+                  const peSem=pe.filter(p=>!p.pagado&&p.fecha>=sem.ini&&p.fecha<=sem.fin);
                   const tS=peSemTodo.reduce((a,b)=>a+b.valor,0); // total semana (pagado o no)
                   const tM=pe.filter(p=>p.fecha.slice(0,7)===mes).reduce((a,b)=>a+b.valor,0);
                   const tT=pe.reduce((a,b)=>a+b.valor,0);
