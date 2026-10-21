@@ -875,10 +875,25 @@ let _guardarTimer=null;
                     })()}
                   
 
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(239,68,68,.08)',borderRadius:8,padding:'10px 14px',marginBottom:8}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(239,68,68,.08)',borderRadius:8,padding:'10px 14px',marginBottom:6}}>
                     <span style={{fontSize:11,color:C.mu,textTransform:'uppercase',fontWeight:700}}>📤 Gastos del período</span>
                     <span style={{fontSize:16,fontWeight:800,color:C.re}}>{fm(totalSalidas)}</span>
                   </div>
+                  {totalSalidas>0&&(
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:5,marginBottom:8}}>
+                      {[
+                        {lbl:'🛒 Compras',val:sCompras},
+                        {lbl:'💳 Abonos Proveedor',val:sAbonos},
+                        {lbl:'👷 Nómina pagada',val:sNomina},
+                        {lbl:'📦 Otros gastos',val:sOtros},
+                      ].filter(it=>it.val>0).map((it,i)=>(
+                        <div key={i} style={{background:'rgba(239,68,68,.06)',borderRadius:7,padding:'6px 10px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                          <span style={{fontSize:10,color:C.mu}}>{it.lbl}</span>
+                          <span style={{fontSize:12,fontWeight:700,color:C.re}}>{fm(it.val)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {/* Por pagar empleados dentro de caja */}
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(251,191,36,.08)',borderRadius:8,padding:'8px 12px',marginBottom:12}}>
                     <span style={{fontSize:11,color:C.mu}}>👷 Por pagar a empleados</span>
@@ -1717,38 +1732,6 @@ let _guardarTimer=null;
                         }/>
                         {clEmpresa&&<FG lbl="NIT" ch={<Inp v={clNit} s={setClNit} ph="Ej: 900123456-7"/>}/>}
                         <Btn onClick={addCl} col={C.or} full ch="👤 Registrar Cliente"/>
-                      </div>
-                    }/>
-                    <Card ch={
-                      <div>
-                        <div style={{fontSize:10,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:C.mu,marginBottom:12}}>🔧 Registrar Servicio</div>
-                        <FG lbl="Buscar cliente" ch={
-                          <div style={{position:'relative'}}>
-                            <Inp v={clBus} s={v=>{setClB(v);if(!v)setClS(null);}} ph="Nombre o telefono..."/>
-                            {clBus&&cli.filter(c=>c.nom.toLowerCase().includes(clBus.toLowerCase())||(c.tel&&c.tel.includes(clBus))).slice(0,5).length>0&&(
-                              <div style={{position:'absolute',top:'100%',left:0,right:0,background:C.ca,border:`1px solid ${C.or}`,borderRadius:'0 0 8px 8px',zIndex:50}}>
-                                {cli.filter(c=>c.nom.toLowerCase().includes(clBus.toLowerCase())||(c.tel&&c.tel.includes(clBus))).slice(0,5).map(c=>(
-                                  <div key={c.id} onClick={()=>{setClS(c);setClB(c.nom);}}
-                                    style={{padding:'10px 12px',cursor:'pointer',fontSize:13,borderBottom:`1px solid ${C.bo}`}}
-                                    onMouseEnter={e=>e.currentTarget.style.background=C.su}
-                                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                                    <b>{c.nom}</b><span style={{color:C.mu,fontSize:11,marginLeft:8}}>{c.tel} {c.moto}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {clSel&&<div style={{fontSize:12,color:C.gr,marginTop:4,fontWeight:600}}>✓ {clSel.nom}{clSel.moto?' · '+clSel.moto:''}</div>}
-                          </div>
-                        }/>
-                        <FG lbl="Fecha" ch={<Inp v={clFe} s={setClFe} type="date"/>}/>
-                        <FG lbl="Tipo de Servicio" ch={<Sel v={clST} s={setClST} opts={SERVT}/>}/>
-                        <FG lbl="Descripcion"      ch={<Inp v={clSD} s={setClSD} ph="Que se hizo..."/>}/>
-                        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                          <FG lbl="Costo ($)"    ch={<Inp v={clSCo} s={setClSCo} type="number"/>}/>
-                          <FG lbl="Cobrado ($)"  ch={<Inp v={clSCb} s={setClSCb} type="number" ph="0" style={{borderColor:C.or}}/>}/>
-                        </div>
-                        <FG lbl="Repuestos usados" ch={<Inp v={clSR} s={setClSR} ph="Ej: Aceite 4T, Filtro..."/>}/>
-                        <Btn onClick={addServCl} col={C.gr} full ch="🔧 Guardar Servicio"/>
                       </div>
                     }/>
                   </div>
