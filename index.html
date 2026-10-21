@@ -795,11 +795,10 @@ let _guardarTimer=null;
           <div>
             <div style={{fontSize:15,fontWeight:800,letterSpacing:2,textTransform:'uppercase',marginBottom:14}}>📊 Resumen General</div>
 
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
-              <KPI lbl="💰 Ventas Totales"  val={fm(tvT)} col={C.gr} sub={ven.length+' transacciones'} onClick={()=>setTab('venta')}/>
-              <KPI lbl="📈 Ganancia Bruta"  val={fm(tvG)} col={C.or} sub={'Margen: '+mar+'%'} onClick={()=>setTab('historial')}/>
-              <KPI lbl="💸 Gastos"          val={fm(tGa)} col={C.re} sub="Incluye nomina" onClick={()=>setTab('gastos')}/>
-              <KPI lbl="🏆 Utilidad Neta"   val={fm(util)} col={util>=0?C.ye:C.re} sub="Ganancia - Gastos"/>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:10}}>
+              <KPI lbl="💰 Ventas"       val={fm(tvT)} col={C.gr} sub={ven.length+' transacciones'} onClick={()=>setTab('venta')}/>
+              <KPI lbl="📈 Ganancia"     val={fm(tvG)} col={C.or} sub={'Margen: '+mar+'%'} onClick={()=>setTab('historial')}/>
+              <KPI lbl="💸 Gastos"       val={fm(tGa)} col={C.re} sub="Incluye nomina" onClick={()=>setTab('gastos')}/>
             </div>
             {/* Caja estimada */}
             {(()=>{
@@ -1009,10 +1008,10 @@ let _guardarTimer=null;
                     <thead><tr><TH ch="Hora"/><TH ch="Tipo"/><TH ch="Descripcion"/><TH ch="Total"/><TH ch="Ganancia"/><TH ch=""/></tr></thead>
                     <tbody>
                       {[...ven.map(v=>({r:v,t:'ven'})),...gas.map(g=>({r:g,t:'gas'}))]
-                        .sort((a,b)=>new Date(b.r.fecha)-new Date(a.r.fecha)).slice(0,10).map((x,i)=>(
+                        .sort((a,b)=>new Date(b.r.fecha)-new Date(a.r.fecha)).slice(0,20).map((x,i)=>(
                         <tr key={i} style={{borderBottom:`1px solid ${C.bo}`}}>
                           <TD style={{color:C.mu,fontSize:12}} ch={fT(x.r.fecha)}/>
-                          <TD ch={<Chip col={x.t==='ven'?C.gr:C.re} ch={x.t==='ven'?'VENTA':'GASTO'}/>}/>
+                          <TD ch={<Chip col={x.t==='ven'?C.gr:C.re} ch={x.t==='ven'?'VENTA':(x.r.tipo||'GASTO')}/>}/>
                           <TD style={{fontSize:12}} ch={(x.r.desc||'').slice(0,35)}/>
                           <TD style={{color:x.t==='ven'?C.gr:C.re,fontWeight:700}} ch={fm(x.t==='ven'?x.r.total:x.r.monto)}/>
                           <TD style={{color:C.gr,fontWeight:700}} ch={x.r.ganancia>0?fm(x.r.ganancia):'-'}/>
