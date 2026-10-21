@@ -1275,7 +1275,6 @@ let _guardarTimer=null;
                       <FG lbl="Categoria"           ch={<CatSel v={crCat} s={setCrCat}/>}/>
                       <FG lbl="Cantidad"            ch={<Inp v={crCant} s={setCrCant} type="number" ph="1"/>}/>
                       <FG lbl="Precio de Compra ($)" ch={<Inp v={crPc} s={setCrPc} type="number" ph="0"/>}/>
-                      }/>
                       <Btn onClick={()=>{
                         if(!crRef.trim()||!crNom.trim()) return toast2('Completa referencia y nombre','err');
                         const refU=crRef.toUpperCase().trim();
