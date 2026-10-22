@@ -475,29 +475,14 @@ let _guardarTimer=null;
     // Si tiene tecnico, el costo real = porcentaje del tecnico (para que ganancia = porcentaje del negocio)
     const pcReal=vTecnico&&pctPre>0?Math.round(pv*(pctPre/100)):pcBase;
     const nomReal2=vTecnico.startsWith('t:')||vTecnico.startsWith('l:')?vTecnico.slice(2):vTecnico;
-    const item={id:'SVC'+uid(),nom:vSD||vST,pv,pc:pcReal,cant:1,sv:true,tecnico:nomReal2};
+    // Guardar datos del tecnico en el item para registrar en produccion al confirmar la venta
+    const esTallerPre=vTecnico.startsWith('t:');
+    const item={id:'SVC'+uid(),nom:vSD||vST,pv,pc:pcReal,cant:1,sv:true,tecnico:nomReal2,
+      _esTaller:vTecnico?esTallerPre:null,
+      _pct:vTecnico?pctPre:null};
     setVI([...vItems,item]);
-    // Si hay tecnico asignado, registrar en produccion del taller
-    if(vTecnico){
-      const esTaller=vTecnico.startsWith('t:');
-      const nomReal=vTecnico.slice(2);
-      if(esTaller){
-        const empObj=emps.find(e=>e.nom===nomReal);
-        const pct=empObj?empObj.pct:60;
-        const prod={id:item.id+'t',fecha:hoy(),empleado:nomReal,
-          servicio:vSD||vST,desc:(vSD||vST),pct,valor:pv,
-          emp60:Math.round(pv*(pct/100)),neg40:Math.round(pv*((100-pct)/100))};
-        sEmpProd([...rEmpProd.current,prod]);
-      } else {
-        const lavObj=lavEmps.find(e=>e.nom===nomReal);
-        const pct=lavObj?lavObj.pct:60;
-        const prod={id:item.id+'l',fecha:hoy(),empleado:nomReal,servicio:(vSD||vST),
-          valor:pv,empParte:Math.round(pv*(pct/100)),negParte:Math.round(pv*((100-pct)/100)),pct};
-        sLavProd([...rLavProd.current,prod]);
-      }
-    }
     setVSD('');setVSC('0');setVSP('');setVTecnico('');
-    toast2('Servicio agregado'+(vTecnico?' — registrado en taller de '+vTecnico:''),'ok');
+    toast2('Servicio agregado'+(vTecnico?' ('+nomReal2+')':''),'ok');
   };
 
   const cargarVentaParaEditar = v => {
@@ -508,12 +493,10 @@ let _guardarTimer=null;
     sVen(rVen.current.filter(x=>x.id!==v.id));
     // Quitar produccion asociada en taller/lavadero si tenia
     if(v.items){
-      v.items.forEach(it=>{
-        if(it.sv){
-          sEmpProd(rEmpProd.current.filter(p=>p.id!==it.id+'t'));
-          sLavProd(rLavProd.current.filter(p=>p.id!==it.id+'l'));
-        }
-      });
+      const idsT=v.items.filter(it=>it.sv).map(it=>it.id+'t');
+      const idsL=v.items.filter(it=>it.sv).map(it=>it.id+'l');
+      if(idsT.length) sEmpProd(rEmpProd.current.filter(p=>!idsT.includes(p.id)));
+      if(idsL.length) sLavProd(rLavProd.current.filter(p=>!idsL.includes(p.id)));
     }
     // Cargar los items en el formulario
     setVI(v.items?[...v.items]:[]);
@@ -536,6 +519,26 @@ let _guardarTimer=null;
     const venta={id:uid(),fecha:new Date().toISOString(),tipo:'venta',cliente:vCli2||'Cliente general',clienteEmail:vClObj?vClObj.email:'',clienteNit:vClObj?vClObj.nit:'',clienteEmpresa:vClObj?vClObj.empresa:false,desc,total,ganancia,pago:vPago,items:[...vItems],iva:ivaMonto};
     sInv(newInv);
     sVen([...rVen.current,venta]);
+    // Registrar produccion de empleados al confirmar la venta (no antes, para evitar duplicados)
+    let eprodAct=rEmpProd.current; let lprodAct=rLavProd.current;
+    vItems.forEach(it=>{
+      if(it.sv&&it.tecnico&&it._esTaller!=null){
+        if(it._esTaller){
+          const pct=it._pct||60;
+          const prod={id:it.id+'t',fecha:hoy(),empleado:it.tecnico,
+            servicio:it.nom,desc:it.nom,pct,valor:it.pv,
+            emp60:Math.round(it.pv*(pct/100)),neg40:Math.round(it.pv*((100-pct)/100))};
+          eprodAct=[...eprodAct,prod];
+        } else {
+          const pct=it._pct||60;
+          const prod={id:it.id+'l',fecha:hoy(),empleado:it.tecnico,servicio:it.nom,
+            valor:it.pv,empParte:Math.round(it.pv*(pct/100)),negParte:Math.round(it.pv*((100-pct)/100)),pct};
+          lprodAct=[...lprodAct,prod];
+        }
+      }
+    });
+    if(eprodAct!==rEmpProd.current) sEmpProd(eprodAct);
+    if(lprodAct!==rLavProd.current) sLavProd(lprodAct);
     if(vPago==='Fiado'){
       const fiaId=uid();
       sFia([...rFia.current,{id:fiaId,nombre:vCli2||'Cliente',tel:'',desc,valor:total,fecha:new Date().toISOString(),vence:'',pagado:false,ventaId:venta.id}]);
@@ -557,14 +560,13 @@ let _guardarTimer=null;
     const v=ven.find(x=>x.id===id);
     const newInv=v&&v.items?inv.map(p=>{const it=v.items.find(x=>x.id===p.id);return it&&!it.sv?{...p,stock:p.stock+it.cant}:p;}):inv;
     sInv(newInv); sVen(ven.filter(x=>x.id!==id));
-    // Borrar produccion del empleado asociada a esta venta
+    // Borrar produccion del empleado asociada a esta venta (sv=true sin importar si tiene tecnico)
     if(v&&v.items){
-      v.items.forEach(it=>{
-        if(it.sv&&it.tecnico){
-          sEmpProd(rEmpProd.current.filter(x=>x.id!==it.id+'t'));
-          sLavProd(rLavProd.current.filter(x=>x.id!==it.id+'l'));
-        }
-      });
+      const svIds=v.items.filter(it=>it.sv).map(it=>it.id);
+      const idsT=svIds.map(id=>id+'t');
+      const idsL=svIds.map(id=>id+'l');
+      sEmpProd(rEmpProd.current.filter(x=>!idsT.includes(x.id)));
+      sLavProd(rLavProd.current.filter(x=>!idsL.includes(x.id)));
     }
     toast2('Venta eliminada','info');
   };
