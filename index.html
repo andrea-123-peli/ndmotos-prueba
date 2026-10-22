@@ -296,7 +296,7 @@ function App() {
           if(d.meta!=null){rMeta.current=d.meta;setMeta(d.meta);}
           set('herr',rHerr,setHerr);
           set('emps',rEmps,setEmps,toEmpObj);
-          const normProd = arr => arr.map(p=>({pagado:false,...p}));
+          const normProd = arr => arr.map(p=>({...p, pagado: p.pagado===true}));
           set('empProd',rEmpProd,setEmpProd,normProd);
           set('lavEmps',rLavEmps,setLavEmps,toEmpObj);
           set('lavProd',rLavProd,setLavProd,normProd);
@@ -421,9 +421,9 @@ let _guardarTimer=null;
       if(d.meta!=null){ rMeta.current=d.meta; setMeta(d.meta); }
       if(d.herr){ rHerr.current=d.herr; setHerr(d.herr); }
       if(d.emps){ const e2=d.emps.map(e=>typeof e==='string'?{nom:e,pct:60}:e); rEmps.current=e2; setEmps(e2); }
-      if(d.empProd){ const ep=d.empProd.map(p=>({pagado:false,...p})); rEmpProd.current=ep; setEmpProd(ep); }
+      if(d.empProd){ const ep=d.empProd.map(p=>({...p, pagado: p.pagado===true})); rEmpProd.current=ep; setEmpProd(ep); }
       if(d.lavEmps){ const le=d.lavEmps.map(e=>typeof e==='string'?{nom:e,pct:50}:e); rLavEmps.current=le; setLavEmps(le); }
-      if(d.lavProd){ const lp=d.lavProd.map(p=>({pagado:false,...p})); rLavProd.current=lp; setLavProd(lp); }
+      if(d.lavProd){ const lp=d.lavProd.map(p=>({...p, pagado: p.pagado===true})); rLavProd.current=lp; setLavProd(lp); }
       if(d.lavPct!=null){ rLavPct.current=d.lavPct; setLavPct(d.lavPct); }
       if(d.creds){ rCreds.current=d.creds; setCreds(d.creds); }
       if(d.negNit!=null){ rNegNit.current=d.negNit; setNegNit(d.negNit); }
@@ -746,6 +746,10 @@ let _guardarTimer=null;
   const vinv   = inv.reduce((a,p)=>a+p.pc*p.stock,0);
   const credsA = creds.filter(cr=>cr.activo!==false&&cr.pagado<cr.totalDeuda);
   const totDeuda = credsA.reduce((a,b)=>a+(b.totalDeuda-b.pagado),0);
+  const gEmpPend = empProd.filter(p=>!p.pagado).reduce((a,b)=>a+b.emp60,0);
+  const gLavPend = lavProd.filter(p=>!p.pagado).reduce((a,b)=>a+(b.empParte||0),0);
+  const gAdelPend = adelantos.filter(a=>!a.pagado).reduce((a,b)=>a+b.monto,0);
+  const gPorPagarEmps = Math.max(0, gEmpPend + gLavPend - gAdelPend);
 
   const TABS = [
     {id:'resumen',  lbl:'📊 Resumen'},
@@ -831,7 +835,7 @@ let _guardarTimer=null;
               const sOtros=gasD.filter(g=>g.tipo!=='Compra Mercancia'&&g.tipo!=='Abono Proveedor'&&g.tipo!=='Nomina').reduce((a,b)=>a+b.monto,0);
               const adelD=adelantos.filter(a=>!a.pagado&&(!fechaCorte||a.fecha>fechaCorte)).reduce((a,b)=>a+b.monto,0);
               const empPendD=empProd.filter(p=>!p.pagado&&(!fechaCorte||p.fecha>fechaCorte)).reduce((a,b)=>a+b.emp60,0);
-              const lavPendD=lavProd.filter(p=>!p.pagado&&(!fechaCorte||p.fecha>fechaCorte)).reduce((a,b)=>a+b.empParte,0);
+              const lavPendD=lavProd.filter(p=>!p.pagado&&(!fechaCorte||p.fecha>fechaCorte)).reduce((a,b)=>a+(b.empParte||0),0);
               const adelTotalPend=adelantos.filter(a=>!a.pagado&&(!fechaCorte||a.fecha>fechaCorte)).reduce((a,b)=>a+b.monto,0);
               const sPorPagarEmps=Math.max(0,empPendD+lavPendD-adelTotalPend);
               const totalSalidas=sCompras+sAbonos+sNomina+sOtros; // adelantos ya incluidos en sOtros
@@ -905,7 +909,7 @@ let _guardarTimer=null;
                   {/* Por pagar empleados dentro de caja */}
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(251,191,36,.08)',borderRadius:8,padding:'8px 12px',marginBottom:12}}>
                     <span style={{fontSize:11,color:C.mu}}>👷 Por pagar a empleados</span>
-                    <span style={{fontSize:14,fontWeight:800,color:C.or}}>{fm(sPorPagarEmps)}</span>
+                    <span style={{fontSize:14,fontWeight:800,color:C.or}}>{fm(gPorPagarEmps)}</span>
                   </div>
 
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(251,191,36,.15)',borderRadius:10,padding:'12px 16px',border:`2px solid ${C.ye}`,marginBottom:10}}>
@@ -2059,8 +2063,9 @@ let _guardarTimer=null;
                   const tS=peSemTodo.reduce((a,b)=>a+b.valor,0); // total semana (pagado o no)
                   const tM=pe.filter(p=>p.fecha.slice(0,7)===mes).reduce((a,b)=>a+b.valor,0);
                   const tT=pe.reduce((a,b)=>a+b.valor,0);
-                  // Solo lo pendiente para calcular pago
-                  const pagoSem=peSem.reduce((a,b)=>a+(b.emp60||Math.round(b.valor*(b.pct||e2.pct)/100)),0);
+                  // Todo lo pendiente (no solo semana)
+                  const peTodo=pe.filter(p=>!p.pagado);
+                  const pagoSem=peTodo.reduce((a,b)=>a+(b.emp60||Math.round(b.valor*(b.pct||e2.pct)/100)),0);
                   return (
                     <div key={e2.nom} style={{background:C.ca,border:`1px solid ${C.bo}`,borderLeft:`4px solid ${C.bl}`,borderRadius:10,padding:14,marginBottom:10}}>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
@@ -2117,10 +2122,10 @@ let _guardarTimer=null;
                             <div style={{background:'rgba(6,182,212,.1)',border:`1px solid ${C.cy}`,borderRadius:8,padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                               <div>
                                 <div style={{fontSize:11,color:C.cy,fontWeight:700}}>💰 Pago a {e2.nom}</div>
-                                <div style={{fontSize:12,color:C.mu}}>Semana del {sem.ini} al {sem.fin}</div>
+                                <div style={{fontSize:12,color:C.mu}}>Todo lo pendiente por pagar</div>
                                 <div style={{background:C.su,borderRadius:8,padding:'8px 12px',marginBottom:8}}>
                                   <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3}}>
-                                    <span style={{color:C.mu}}>🔧 Produccion semana ({e2.pct}% de {fm(tS)})</span>
+                                    <span style={{color:C.mu}}>🔧 Produccion pendiente ({e2.pct}%)</span>
                                     <span style={{color:C.gr,fontWeight:700}}>{fm(pagoSem)}</span>
                                   </div>
                                   {totalAdel>0&&<div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:3,borderTop:`1px solid ${C.bo}`,paddingTop:4}}>
@@ -2339,8 +2344,9 @@ let _guardarTimer=null;
                   const tS=peSemTodo.reduce((a,b)=>a+b.valor,0); // total semana (pagado o no)
                   const tM=pe.filter(p=>p.fecha.slice(0,7)===mes).reduce((a,b)=>a+b.valor,0);
                   const tT=pe.reduce((a,b)=>a+b.valor,0);
-                  // Solo lo pendiente para calcular pago
-                  const pagoSem=peSem.reduce((a,b)=>a+(b.empParte||Math.round(b.valor*(b.pct||e2.pct)/100)),0);
+                  // Todo lo pendiente (no solo semana)
+                  const peTodo=pe.filter(p=>!p.pagado);
+                  const pagoSem=peTodo.reduce((a,b)=>a+(b.empParte||Math.round(b.valor*(b.pct||e2.pct)/100)),0);
                   return (
                     <div key={e2.nom} style={{background:C.ca,border:`1px solid ${C.bo}`,borderLeft:`4px solid ${C.cy}`,borderRadius:10,padding:14}}>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
@@ -2392,8 +2398,8 @@ let _guardarTimer=null;
                             <div style={{background:'rgba(34,197,94,.1)',border:`1px solid ${C.gr}`,borderRadius:8,padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                               <div>
                                 <div style={{fontSize:11,color:C.gr,fontWeight:700}}>💰 Pago a {e2.nom}</div>
-                                <div style={{fontSize:12,color:C.mu}}>Semana del {sem.ini} al {sem.fin}</div>
-                                <div style={{fontSize:12,color:C.gr}}>Producción ({e2.pct}%): {fm(pagoSem)}</div>
+                                <div style={{fontSize:12,color:C.mu}}>Todo lo pendiente por pagar</div>
+                                <div style={{fontSize:12,color:C.gr}}>Producción pendiente ({e2.pct}%): {fm(pagoSem)}</div>
                                 {totalAdelL>0&&<div style={{fontSize:12,color:C.re}}>Adelantos: -{fm(totalAdelL)}</div>}
                                 <div style={{fontSize:15,fontWeight:800,color:C.gr}}>A pagar: {fm(pagoRealL)}</div>
                               </div>
