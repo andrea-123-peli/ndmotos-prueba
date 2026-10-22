@@ -296,9 +296,10 @@ function App() {
           if(d.meta!=null){rMeta.current=d.meta;setMeta(d.meta);}
           set('herr',rHerr,setHerr);
           set('emps',rEmps,setEmps,toEmpObj);
-          set('empProd',rEmpProd,setEmpProd);
+          const normProd = arr => arr.map(p=>({pagado:false,...p}));
+          set('empProd',rEmpProd,setEmpProd,normProd);
           set('lavEmps',rLavEmps,setLavEmps,toEmpObj);
-          set('lavProd',rLavProd,setLavProd);
+          set('lavProd',rLavProd,setLavProd,normProd);
           if(d.lavPct!=null){rLavPct.current=d.lavPct;setLavPct(d.lavPct);}
           set('creds',rCreds,setCreds);
           if(d.negNit!=null){rNegNit.current=d.negNit;setNegNit(d.negNit);}
@@ -420,9 +421,9 @@ let _guardarTimer=null;
       if(d.meta!=null){ rMeta.current=d.meta; setMeta(d.meta); }
       if(d.herr){ rHerr.current=d.herr; setHerr(d.herr); }
       if(d.emps){ const e2=d.emps.map(e=>typeof e==='string'?{nom:e,pct:60}:e); rEmps.current=e2; setEmps(e2); }
-      if(d.empProd){ rEmpProd.current=d.empProd; setEmpProd(d.empProd); }
+      if(d.empProd){ const ep=d.empProd.map(p=>({pagado:false,...p})); rEmpProd.current=ep; setEmpProd(ep); }
       if(d.lavEmps){ const le=d.lavEmps.map(e=>typeof e==='string'?{nom:e,pct:50}:e); rLavEmps.current=le; setLavEmps(le); }
-      if(d.lavProd){ rLavProd.current=d.lavProd; setLavProd(d.lavProd); }
+      if(d.lavProd){ const lp=d.lavProd.map(p=>({pagado:false,...p})); rLavProd.current=lp; setLavProd(lp); }
       if(d.lavPct!=null){ rLavPct.current=d.lavPct; setLavPct(d.lavPct); }
       if(d.creds){ rCreds.current=d.creds; setCreds(d.creds); }
       guardar();
@@ -2129,7 +2130,7 @@ let _guardarTimer=null;
                               <Btn sm col={C.gr} onClick={()=>{
                                 // Produccion lavadero de esta semana
                                 sEmp([...rEmp.current,{id:uid(),fecha:hoy(),nombre:e2.nom,cargo:'Taller',periodo:sem.ini+' al '+sem.fin,monto:pagoReal,pago:'Efectivo'}]);
-                                sEmpProd(rEmpProd.current.map(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado?{...p,pagado:true}:p));
+                                sEmpProd(rEmpProd.current.map(p=>p.empleado===e2.nom&&!p.pagado?{...p,pagado:true}:p));
                                 sAdelantos(rAdelantos.current.map(a=>a.nom===e2.nom&&!a.pagado?{...a,pagado:true}:a));
                                 toast2('Pago de '+fm(pagoReal)+' a '+e2.nom+' (Taller) registrado','ok');
                               }} col={C.gr} ch="✅ Registrar pago"/>
@@ -2393,7 +2394,7 @@ let _guardarTimer=null;
                               </div>
                               <Btn sm col={C.gr} onClick={()=>{
                                 sEmp([...rEmp.current,{id:uid(),fecha:hoy(),nombre:e2.nom,cargo:'Lavadero',periodo:sem.ini+' al '+sem.fin,monto:pagoRealL,pago:'Efectivo'}]);
-                                sLavProd(rLavProd.current.map(p=>p.empleado===e2.nom&&p.fecha>=sem.ini&&p.fecha<=sem.fin&&!p.pagado?{...p,pagado:true}:p));
+                                sLavProd(rLavProd.current.map(p=>p.empleado===e2.nom&&!p.pagado?{...p,pagado:true}:p));
                                 sAdelantos(rAdelantos.current.map(a=>a.nom===e2.nom&&!a.pagado?{...a,pagado:true}:a));
                                 toast2('Pago de '+fm(pagoRealL)+' a '+e2.nom+' registrado','ok');
                               }} ch="✅ Registrar pago"/>
