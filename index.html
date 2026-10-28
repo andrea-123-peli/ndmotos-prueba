@@ -2176,9 +2176,16 @@ let _guardarTimer=null;
                                 </div>
                               </div>
                               <Btn sm col={C.gr} onClick={()=>{
-                                sEmp([...rEmp.current,{id:uid(),fecha:hoy(),nombre:e2.nom,cargo:'Taller',periodo:sem.ini+' al '+sem.fin,monto:pagoReal,pago:'Efectivo'}]);
-                                sEmpProd(rEmpProd.current.map(p=>p.empleado===e2.nom&&!p.pagado?{...p,pagado:true}:p));
-                                sAdelantos(rAdelantos.current.map(a=>a.nom===e2.nom&&!a.pagado?{...a,pagado:true}:a));
+                                const nEmpIdT=uid();
+                                const newEmpT=[...rEmp.current,{id:nEmpIdT,fecha:hoy(),nombre:e2.nom,cargo:'Taller',periodo:sem.ini+' al '+sem.fin,monto:pagoReal,pago:'Efectivo'}];
+                                const newEmpProdT=rEmpProd.current.map(p=>p.empleado===e2.nom&&!p.pagado?{...p,pagado:true}:p);
+                                const newAdelT=rAdelantos.current.map(a=>a.nom===e2.nom&&!a.pagado?{...a,pagado:true}:a);
+                                const newGasT=[...rGas.current,{id:nEmpIdT+'g',fecha:new Date().toISOString(),tipo:'Nomina',desc:'Pago taller — '+e2.nom+' ('+sem.ini+' al '+sem.fin+')',monto:pagoReal,pago:'Efectivo'}];
+                                rEmp.current=newEmpT; setEmp(newEmpT);
+                                rEmpProd.current=newEmpProdT; setEmpProd(newEmpProdT);
+                                rAdelantos.current=newAdelT; setAdelantos(newAdelT);
+                                rGas.current=newGasT; setGas(newGasT);
+                                guardar({emp:newEmpT,empProd:newEmpProdT,adelantos:newAdelT,gas:newGasT});
                                 toast2('Pago de '+fm(pagoReal)+' a '+e2.nom+' (Taller) registrado','ok');
                               }} col={C.gr} ch="✅ Registrar pago"/>
                             </div>
@@ -2444,9 +2451,16 @@ let _guardarTimer=null;
                                 <div style={{fontSize:15,fontWeight:800,color:C.gr}}>A pagar: {fm(pagoRealL)}</div>
                               </div>
                               <Btn sm col={C.gr} onClick={()=>{
-                                sEmp([...rEmp.current,{id:uid(),fecha:hoy(),nombre:e2.nom,cargo:'Lavadero',periodo:sem.ini+' al '+sem.fin,monto:pagoRealL,pago:'Efectivo'}]);
-                                sLavProd(rLavProd.current.map(p=>p.empleado===e2.nom&&!p.pagado?{...p,pagado:true}:p));
-                                sAdelantos(rAdelantos.current.map(a=>a.nom===e2.nom&&!a.pagado?{...a,pagado:true}:a));
+                                const nEmpIdL=uid();
+                                const newEmpL=[...rEmp.current,{id:nEmpIdL,fecha:hoy(),nombre:e2.nom,cargo:'Lavadero',periodo:sem.ini+' al '+sem.fin,monto:pagoRealL,pago:'Efectivo'}];
+                                const newLavProdL=rLavProd.current.map(p=>p.empleado===e2.nom&&!p.pagado?{...p,pagado:true}:p);
+                                const newAdelL=rAdelantos.current.map(a=>a.nom===e2.nom&&!a.pagado?{...a,pagado:true}:a);
+                                const newGasL=[...rGas.current,{id:nEmpIdL+'g',fecha:new Date().toISOString(),tipo:'Nomina',desc:'Pago lavadero — '+e2.nom+' ('+sem.ini+' al '+sem.fin+')',monto:pagoRealL,pago:'Efectivo'}];
+                                rEmp.current=newEmpL; setEmp(newEmpL);
+                                rLavProd.current=newLavProdL; setLavProd(newLavProdL);
+                                rAdelantos.current=newAdelL; setAdelantos(newAdelL);
+                                rGas.current=newGasL; setGas(newGasL);
+                                guardar({emp:newEmpL,lavProd:newLavProdL,adelantos:newAdelL,gas:newGasL});
                                 toast2('Pago de '+fm(pagoRealL)+' a '+e2.nom+' registrado','ok');
                               }} ch="✅ Registrar pago"/>
                             </div>
@@ -2605,9 +2619,12 @@ let _guardarTimer=null;
               const newAdel=[...rAdelantos.current,nuevoAdel];
               const newEmp=[...rEmp.current,{id:nuevoAdel.id+'e',fecha:nuevoAdel.fecha,nombre:nuevoAdel.nom,
                 cargo:'Adelanto',periodo:nuevoAdel.fecha,monto,pago:'Efectivo'}];
+              const newGasAdel=[...rGas.current,{id:nuevoAdel.id+'g',fecha:new Date().toISOString(),
+                tipo:'Adelanto Empleado',desc:'Adelanto a '+nuevoAdel.nom+' — '+(adelDesc||'Adelanto'),monto,pago:'Efectivo'}];
               rAdelantos.current=newAdel; setAdelantos(newAdel);
               rEmp.current=newEmp; setEmp(newEmp);
-              guardar({adelantos:newAdel,emp:newEmp});
+              rGas.current=newGasAdel; setGas(newGasAdel);
+              guardar({adelantos:newAdel,emp:newEmp,gas:newGasAdel});
               setAdelModal(null);
               toast2('Adelanto de '+fm(monto)+' registrado y descontado de caja','ok');
             }} col={C.ye} style={{flex:1,justifyContent:'center'}} ch="💰 Registrar Adelanto"/>
