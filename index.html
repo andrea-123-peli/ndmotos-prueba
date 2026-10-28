@@ -872,14 +872,14 @@ let _guardarTimer=null;
               const gasD=gas.filter(g=>!fechaCorte||g.fecha>fechaCorte);
               const sCompras=gasD.filter(g=>g.tipo==='Compra Mercancia').reduce((a,b)=>a+b.monto,0);
               const sAbonos=gasD.filter(g=>g.tipo==='Abono Proveedor').reduce((a,b)=>a+b.monto,0);
-              const sNomina=gasD.filter(g=>g.tipo==='Nomina').reduce((a,b)=>a+b.monto,0);
-              const sOtros=gasD.filter(g=>g.tipo!=='Compra Mercancia'&&g.tipo!=='Abono Proveedor'&&g.tipo!=='Nomina').reduce((a,b)=>a+b.monto,0);
+              const sNomina=gasD.filter(g=>g.tipo==='Nomina'||g.tipo==='Adelanto Empleado').reduce((a,b)=>a+b.monto,0);
+              const sOtros=gasD.filter(g=>g.tipo!=='Compra Mercancia'&&g.tipo!=='Abono Proveedor'&&g.tipo!=='Nomina'&&g.tipo!=='Adelanto Empleado').reduce((a,b)=>a+b.monto,0);
               const adelD=adelantos.filter(a=>!a.pagado&&(!fechaCorte||a.fecha>fechaCorte)).reduce((a,b)=>a+b.monto,0);
               const empPendD=empProd.filter(p=>!p.pagado&&(!fechaCorte||p.fecha>fechaCorte)).reduce((a,b)=>a+b.emp60,0);
               const lavPendD=lavProd.filter(p=>!p.pagado&&(!fechaCorte||p.fecha>fechaCorte)).reduce((a,b)=>a+(b.empParte||0),0);
               const adelTotalPend=adelantos.filter(a=>!a.pagado&&(!fechaCorte||a.fecha>fechaCorte)).reduce((a,b)=>a+b.monto,0);
               const sPorPagarEmps=Math.max(0,empPendD+lavPendD-adelTotalPend);
-              const totalSalidas=sCompras+sAbonos+sNomina+sOtros; // adelantos ya incluidos en sOtros
+              const totalSalidas=sCompras+sAbonos+sNomina+sOtros; // adelantos incluidos en sNomina
               // sPorPagarEmps NO se descuenta de caja - solo cuando se pague (va a sNomina)
               const caja2=saldoIni+totalEntradas-totalSalidas;
 
