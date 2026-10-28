@@ -625,18 +625,25 @@ let _guardarTimer=null;
 
   const regCompra = () => {
     const cant=parseInt(cCnt)||1, pc=parseFloat(cPc)||0, pv=parseFloat(cPv)||0;
-    let nomP='', newInv=[...inv];
+    let nomP='';
+    const patch={};
     if(cNuevo){
       if(!cRef||!cNom) return toast2('Completa referencia y nombre','err');
       const refU=cRef.toUpperCase();
       // Referencias duplicadas permitidas
-      newInv=[...inv,{id:refU,cat:cCat,nom:cNom,pc,pv,stock:cant}]; nomP=cNom;
+      const newInv=[...rInv.current,{id:refU,cat:cCat,nom:cNom,pc,pv,stock:cant}];
+      rInv.current=newInv; setInv(newInv);
+      patch.inv=newInv; nomP=cNom;
     } else {
       if(!cSel) return toast2('Selecciona el producto','err');
       nomP=cSel.nom;
     }
-    sCom([...rCom.current,{id:uid(),fecha:new Date().toISOString(),proveedor:cProv||'Proveedor',desc:cant+'x '+nomP,cant,pc,total:pc*cant,pago:cPago}]);
-    sGas([...rGas.current,{id:uid(),fecha:new Date().toISOString(),tipo:'Compra Mercancia',desc:cant+'x '+nomP,monto:pc*cant,pago:cPago}]);
+    const newCom=[...rCom.current,{id:uid(),fecha:new Date().toISOString(),proveedor:cProv||'Proveedor',desc:cant+'x '+nomP,cant,pc,total:pc*cant,pago:cPago}];
+    const newGasC=[...rGas.current,{id:uid(),fecha:new Date().toISOString(),tipo:'Compra Mercancia',desc:cant+'x '+nomP,monto:pc*cant,pago:cPago}];
+    rCom.current=newCom; setCom(newCom);
+    rGas.current=newGasC; setGas(newGasC);
+    patch.com=newCom; patch.gas=newGasC;
+    guardar(patch);
     setCB('');setCS(null);setCCnt('1');setCPc('');setCPv('');setCPrv('');setCN(false);
     toast2('Compra registrada','ok');
   };
@@ -659,8 +666,11 @@ let _guardarTimer=null;
     if(!eN) return toast2('Escribe el nombre','err');
     const monto=parseFloat(eM);
     if(!monto) return toast2('Ingresa el monto','err');
-    sEmp([...rEmp.current,{id:uid(),fecha:new Date().toISOString(),nombre:eN,cargo:eCa,periodo:ePe,monto,pago:ePa}]);
-    sGas([...rGas.current,{id:uid(),fecha:new Date().toISOString(),tipo:'Nomina',desc:eN+' ('+eCa+') '+ePe,monto,pago:ePa}]);
+    const newEmpR=[...rEmp.current,{id:uid(),fecha:new Date().toISOString(),nombre:eN,cargo:eCa,periodo:ePe,monto,pago:ePa}];
+    const newGasR=[...rGas.current,{id:uid(),fecha:new Date().toISOString(),tipo:'Nomina',desc:eN+' ('+eCa+') '+ePe,monto,pago:ePa}];
+    rEmp.current=newEmpR; setEmp(newEmpR);
+    rGas.current=newGasR; setGas(newGasR);
+    guardar({emp:newEmpR,gas:newGasR});
     setEN('');setEM('');toast2('Pago registrado','ok');
   };
 
@@ -2109,7 +2119,7 @@ let _guardarTimer=null;
                         <div style={{fontWeight:800,fontSize:15}}>{e2.nom}</div>
                         <div style={{display:'flex',gap:6}}>
                           <Btn sm col={C.ye} onClick={()=>{setAdelModal({nom:e2.nom,tipo:'taller'});setAdelMonto('');setAdelDesc('');setAdelFecha(hoy());}} ch="💰 Adelanto Taller"/>
-                          <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro que deseas eliminar a '+e2.nom+'?'))return;sEmps(emps.filter(x=>x.nom!==e2.nom));sEmpProd(rEmpProd.current.filter(p=>p.empleado!==e2.nom));toast2(e2.nom+' eliminado','info');}} ch="Eliminar"/>
+                          <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro que deseas eliminar a '+e2.nom+'?'))return;const nEm=emps.filter(x=>x.nom!==e2.nom);const nEP=rEmpProd.current.filter(p=>p.empleado!==e2.nom);rEmps.current=nEm;setEmps(nEm);rEmpProd.current=nEP;setEmpProd(nEP);guardar({emps:nEm,empProd:nEP});toast2(e2.nom+' eliminado','info');}} ch="Eliminar"/>
                         </div>
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,background:C.su,borderRadius:8,padding:'8px 12px'}}>
@@ -2400,7 +2410,7 @@ let _guardarTimer=null;
                         <div style={{fontWeight:800,fontSize:14}}>🚿 {e2.nom}</div>
                         <div style={{display:'flex',gap:6}}>
                           <Btn sm col={C.ye} onClick={()=>{setAdelModal({nom:e2.nom,tipo:'lavadero'});setAdelMonto('');setAdelDesc('');setAdelFecha(hoy());}} ch="💰 Adelanto Lavadero"/>
-                          <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro que deseas eliminar a '+e2.nom+'?'))return;sLavEmps(lavEmps.filter(x=>x.nom!==e2.nom));sLavProd(rLavProd.current.filter(p=>p.empleado!==e2.nom));toast2(e2.nom+' eliminado','info');}} ch="Eliminar"/>
+                          <Btn sm col={C.re} onClick={()=>{if(!confirm('¿Seguro que deseas eliminar a '+e2.nom+'?'))return;const nLEm=lavEmps.filter(x=>x.nom!==e2.nom);const nLP=rLavProd.current.filter(p=>p.empleado!==e2.nom);rLavEmps.current=nLEm;setLavEmps(nLEm);rLavProd.current=nLP;setLavProd(nLP);guardar({lavEmps:nLEm,lavProd:nLP});toast2(e2.nom+' eliminado','info');}} ch="Eliminar"/>
                         </div>
                       </div>
                       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,background:C.su,borderRadius:8,padding:'8px 12px'}}>
@@ -2501,13 +2511,16 @@ let _guardarTimer=null;
                   }).slice().reverse();
                   const totVal=fil.reduce((a,b)=>a+b.valor,0);
                   const filPendLav=fil.filter(p=>!p.pagado);
-                  const totEmp=filPendLav.reduce((a,b)=>a+b.empParte,0); // solo pendiente
+                  const totEmpBruto=filPendLav.reduce((a,b)=>a+b.empParte,0);
+                  const empsEnFilLav=[...new Set(filPendLav.map(p=>p.empleado))];
+                  const adelPendFilLav=adelantos.filter(a=>!a.pagado&&a.tipo==='lavadero'&&empsEnFilLav.includes(a.nom)).reduce((a,b)=>a+b.monto,0);
+                  const totEmp=Math.max(0,totEmpBruto-adelPendFilLav);
                   const totNeg=fil.reduce((a,b)=>a+b.negParte,0);
                   return (
                     <div>
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:14}}>
                         <div style={{background:C.su,borderRadius:8,padding:12,textAlign:'center'}}><div style={{fontSize:10,color:C.mu,textTransform:'uppercase',marginBottom:4}}>Total Producido</div><div style={{fontSize:22,fontWeight:800,color:C.cy}}>{fm(totVal)}</div><div style={{fontSize:10,color:C.mu}}>{fil.length} servicio(s)</div></div>
-                        <div style={{background:'rgba(34,197,94,.1)',borderRadius:8,padding:12,textAlign:'center'}}><div style={{fontSize:10,color:C.mu,textTransform:'uppercase',marginBottom:4}}>Para Tecnicos</div><div style={{fontSize:22,fontWeight:800,color:C.gr}}>{fm(totEmp)}</div></div>
+                        <div style={{background:'rgba(34,197,94,.1)',borderRadius:8,padding:12,textAlign:'center'}}><div style={{fontSize:10,color:C.mu,textTransform:'uppercase',marginBottom:4}}>Para Tecnicos</div><div style={{fontSize:22,fontWeight:800,color:C.gr}}>{fm(totEmp)}</div>{adelPendFilLav>0&&<div style={{fontSize:10,color:C.re}}>(-{fm(adelPendFilLav)} adelantos)</div>}</div>
                         <div style={{background:'rgba(255,107,26,.1)',borderRadius:8,padding:12,textAlign:'center'}}><div style={{fontSize:10,color:C.mu,textTransform:'uppercase',marginBottom:4}}>Para el Negocio</div><div style={{fontSize:22,fontWeight:800,color:C.or}}>{fm(totNeg)}</div></div>
                       </div>
                       <div style={{overflowX:'auto'}}>
